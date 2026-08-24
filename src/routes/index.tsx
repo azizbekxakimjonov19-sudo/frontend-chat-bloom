@@ -1064,7 +1064,16 @@ function WheelGameScreen({ back }: { back: () => void }) {
         <GameBalances />
 
         <div className="relative mx-auto w-[280px] h-[300px] flex items-start justify-center">
-          <div className="absolute top-0 z-20 text-3xl drop-shadow-lg" style={{ filter: "drop-shadow(0 3px 3px rgba(0,0,0,.35))" }}>🔻</div>
+          <div
+            className="absolute top-1 z-20"
+            style={{
+              width: 0, height: 0,
+              borderLeft: "14px solid transparent",
+              borderRight: "14px solid transparent",
+              borderTop: "26px solid var(--gold)",
+              filter: "drop-shadow(0 3px 3px rgba(0,0,0,.4))",
+            }}
+          />
           <div
             className="absolute top-6 w-[268px] h-[268px] rounded-full"
             style={{ background: "linear-gradient(145deg,#fbbf24,#b45309)", boxShadow: "0 18px 30px -12px rgba(0,0,0,.55), inset 0 -6px 12px rgba(0,0,0,.25)" }}
@@ -1089,10 +1098,10 @@ function WheelGameScreen({ back }: { back: () => void }) {
             ))}
           </div>
           <div
-            className="absolute top-[145px] w-[62px] h-[62px] rounded-full z-10 flex items-center justify-center text-xl"
+            className="absolute top-[145px] w-[62px] h-[62px] rounded-full z-10 flex items-center justify-center"
             style={{ background: "radial-gradient(circle at 35% 30%, #fde68a, #d97706)", boxShadow: "0 6px 14px rgba(0,0,0,.4)" }}
           >
-            ⭐
+            <div style={{ width: 22, height: 22, borderRadius: 999, background: "rgba(255,255,255,.7)" }} />
           </div>
         </div>
 
