@@ -1,3 +1,4 @@
+import logoAsset from "@/assets/lumowin-logo.png.asset.json";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -17,7 +18,7 @@ import { JackpotDetailScreen } from "@/components/JackpotScreens";
 import { AdminPanel } from "@/components/AdminPanel";
 
 export const Route = createFileRoute("/")({
-  component: NestPlayApp,
+  component: LumoWinApp,
 });
 
 type Screen =
@@ -45,7 +46,7 @@ function useNow(ms = 1000) {
 }
 
 /* ---------- App ---------- */
-function NestPlayApp() {
+function LumoWinApp() {
   const [screen, setScreen] = useState<Screen>("home");
   const [activeJp, setActiveJp] = useState<string | null>(null);
   const jackpots = useGame((s) => s.jackpots);
@@ -655,8 +656,8 @@ function BrandHeader({ onDeposit }: { onDeposit: () => void }) {
     <div className="px-4 pt-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src="/nestplay-logo.png" alt="NestPlay" className="w-10 h-10 rounded-lg object-contain" />
-          <span className="font-extrabold tracking-tight text-lg">NestPlay</span>
+          <img src={logoAsset.url} alt="LumoWin" className="w-10 h-10 rounded-xl object-contain" />
+          <span className="font-extrabold tracking-tight text-lg">LumoWin</span>
         </div>
         <button
           onClick={onDeposit}
@@ -1278,7 +1279,7 @@ function ProfileScreen({ go }: { go: (s: Screen) => void }) {
 
 /* ---------- Deposit / Withdraw ---------- */
 const MIN_AMOUNT = 10000;
-const SUPPORT_USERNAME = "NestPlay_Support";
+const SUPPORT_USERNAME = "LumoWin";
 
 function DepositScreen({ back }: { back: () => void }) {
   const [amount, setAmount] = useState("100 000");
@@ -1300,7 +1301,7 @@ function DepositScreen({ back }: { back: () => void }) {
     if (!r.ok) { setMsg({ ok: false, text: r.error || "Xatolik" }); setTimeout(() => setMsg(null), 2500); return; }
     const methodLabel = methods.find((m) => m.key === method)?.label || method;
     const text =
-`NestPlay hisob to'ldirish so'rovi
+`LumoWin hisob to'ldirish so'rovi
 Ism: ${me.firstName}${me.username ? " (@" + me.username + ")" : ""}
 Telegram ID: ${me.id}
 Summa: ${formatMoney(n)} so'm
@@ -1467,7 +1468,7 @@ function RulesScreen({ back }: { back: () => void }) {
       "To'lov holatini ilova orqali Kutilmoqda, To'lanmoqda, To'landi yoki Rad etildi ko'rinishida kuzatishingiz mumkin.",
     ]},
     { title: "🏆 Umumiy qoidalar", items: [
-      "NestPlay — Telegram Mini App. Har bir foydalanuvchi Telegram ID orqali avtomatik aniqlanadi.",
+      "LumoWin — Telegram Mini App. Har bir foydalanuvchi Telegram ID orqali avtomatik aniqlanadi.",
       "Har bir foydalanuvchi uchun alohida hisob, balans va o'yinlar tarixi yuritiladi.",
       "Platformada Haftalik va Kunlik Jackpot o'yinlari mavjud.",
       "Har bir jackpot uchun chipta narxi, yutuq jamg'armasi, o'yin muddati va g'oliblar soni administrator tomonidan belgilanadi.",
@@ -1576,7 +1577,7 @@ function FaqScreen({ back }: { back: () => void }) {
           </div>
           <div className="flex-1">
             <div className="font-semibold text-sm">Biz bilan bog'lanish</div>
-            <div className="text-xs opacity-90">@NestPlay_Support</div>
+            <div className="text-xs opacity-90">@LumoWin</div>
           </div>
           <ChevronRight className="w-5 h-5" />
         </div>
@@ -1587,7 +1588,7 @@ function FaqScreen({ back }: { back: () => void }) {
 
 function ReferralScreen({ back }: { back: () => void }) {
   const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
-  const link = useMemo(() => `https://t.me/NestPlayBot?start=${me.id}`, [me.id]);
+  const link = useMemo(() => `https://t.me/LumoWinBot?start=${me.id}`, [me.id]);
   const [stats, setStats] = useState<{ invited: number; verified: number; earned: number }>({ invited: 0, verified: 0, earned: 0 });
   useEffect(() => {
     let alive = true;

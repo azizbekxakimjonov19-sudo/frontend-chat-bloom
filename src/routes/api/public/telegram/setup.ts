@@ -11,7 +11,7 @@ export const Route = createFileRoute("/api/public/telegram/setup")({
         }
         // Telegram must call the stable public dev host so webhook fixes become
         // available immediately without depending on the separately published UI.
-        const url = "https://project--be56b12e-c37a-4004-a04b-d0cea4ef9de3-dev.lovable.app/api/public/telegram/webhook";
+        const url = "https://project--dddcaf78-fd69-4d5e-a5ef-6ef2bea77fa1-dev.lovable.app/api/public/telegram/webhook";
         const secret = await telegramWebhookSecret(token);
         const r = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
           method: "POST",
@@ -32,8 +32,8 @@ export const Route = createFileRoute("/api/public/telegram/setup")({
           body: JSON.stringify({
             menu_button: {
               type: "web_app",
-              text: "🎮 Ochish",
-              web_app: { url: "https://telegram-mini-charm.lovable.app" },
+              text: "🎡 Ochish",
+              web_app: { url: "https://frontend-chat-bloom.lovable.app" },
             },
           }),
         }).then((x) => x.json()).catch(() => ({}));
