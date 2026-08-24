@@ -97,11 +97,6 @@ function LumoWinApp() {
             Auth: {authError}
           </div>
         )}
-        {!ready && !authError && (
-          <div className="mx-4 mt-2 rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
-            Yuklanmoqda…
-          </div>
-        )}
         {screen === "home" && <HomeScreen go={setScreen} openJackpot={openJackpot} />}
         {screen === "games" && <GamesScreen go={setScreen} />}
         {screen === "wheel" && <WheelGameScreen back={() => setScreen("games")} />}
