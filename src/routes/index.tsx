@@ -2,6 +2,7 @@ import logoAsset from "@/assets/lumowin-logo.png.asset.json";
 import bannerWheel from "@/assets/banner-wheel.jpg";
 import bannerCards from "@/assets/banner-cards.jpg";
 import bannerReferral from "@/assets/banner-referral.jpg";
+import bannerAds from "@/assets/banner-ads.jpg";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -72,6 +73,18 @@ function LumoWinApp() {
     initFromTelegram(tg);
   }, []);
 
+  useEffect(() => {
+    if (!ready) return;
+    let alive = true;
+    const ping = async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      if (alive) await (supabase as any).rpc("touch_last_seen");
+    };
+    ping().catch(() => {});
+    const id = setInterval(() => { ping().catch(() => {}); }, 5 * 60 * 1000);
+    return () => { alive = false; clearInterval(id); };
+  }, [ready]);
+
   const isTab = (["home", "games", "bonus", "earn", "payment", "payouts", "profile"] as Screen[]).includes(screen);
 
   const openJackpot = (id: string) => { setActiveJp(id); setScreen("jackpot"); };
@@ -82,11 +95,6 @@ function LumoWinApp() {
         {authError && (
           <div className="mx-4 mt-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             Auth: {authError}
-          </div>
-        )}
-        {!ready && !authError && (
-          <div className="mx-4 mt-2 rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
-            Yuklanmoqda…
           </div>
         )}
         {screen === "home" && <HomeScreen go={setScreen} openJackpot={openJackpot} />}
@@ -385,7 +393,7 @@ function EarnScreen() {
   const waitForSdk = async (timeout = 6000): Promise<((...a: any[]) => Promise<void>) | null> => {
     const t0 = Date.now();
     while (Date.now() - t0 < timeout) {
-      const fn = (window as any).show_11429104;
+      const fn = (window as any).show_11642131;
       if (typeof fn === "function") return fn;
       await new Promise((r) => setTimeout(r, 250));
     }
@@ -535,7 +543,7 @@ function InvestPanel() {
     setBusy(true);
     // 1 ad view before claim (best-effort)
     try {
-      const fn = (window as any).show_11429104;
+      const fn = (window as any).show_11642131;
       if (typeof fn === "function") await fn().catch(() => {});
     } catch {}
     const r = await claimInvestment(id);
@@ -1597,7 +1605,7 @@ function WithdrawScreen({ back }: { back: () => void }) {
         </div>
         <ul className="mt-3 text-xs text-muted-foreground space-y-1">
           <li>› Minimal yechish: <b>{formatMoney(MIN_AMOUNT)} so'm</b></li>
-          <li>› 48 soat ichida amalga oshiriladi</li>
+          <li>› 25 soat ichida amalga oshiriladi</li>
         </ul>
         <button onClick={submit} disabled={sending}
           className="mt-5 w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold shadow-button disabled:opacity-50">
@@ -1685,8 +1693,8 @@ function RulesScreen({ back }: { back: () => void }) {
       "Minimal pul yechish — 10 000 so'm.",
       "Hisobni to'ldirishda foydalanuvchi to'lov usuli va summani tanlaydi.",
       "Tayyor so'rov avtomatik ravishda @" + SUPPORT_USERNAME + " administratoriga yuboriladi.",
-      "Pul yechish so'rovlari 48 soat ichida (dam olish kunlarisiz) ko'rib chiqiladi va to'lab berish kafolatlanadi.",
-      "Ayrim hollarda to'lov 48 soatdan ham kechikishi mumkin — bu qoidabuzarlik hisoblanmaydi.",
+      "Pul yechish so'rovlari 25 soat ichida (dam olish kunlarisiz) ko'rib chiqiladi va to'lab berish kafolatlanadi.",
+      "Ayrim hollarda to'lov 25 soatdan ham kechikishi mumkin — bu qoidabuzarlik hisoblanmaydi.",
       "Platforma daromadi reklama xizmatlaridan tushadi. Reklama to'lovlari kechikkan hollarda foydalanuvchilarga to'lovlar ham keyingi reklama to'lovi kelguncha kechikishi mumkin.",
       "Kechikish yuz berganda foydalanuvchiga navbat raqami va taxminiy to'lov muddati ko'rsatiladi; to'lov shu muddat ichida navbat bo'yicha amalga oshiriladi.",
       "Ayrim holatlarda (texnik ishlar, bank yoki to'lov tizimidagi nosozliklar, katta hajmdagi so'rovlar) to'lovlar kechikishi mumkin.",
@@ -1790,7 +1798,7 @@ function ReferralScreen({ back }: { back: () => void }) {
       <div className="p-4 space-y-3">
         <div className="jackpot-card rounded-2xl p-5">
           <div className="text-xs opacity-90 tracking-wider">DO'STLARINGIZNI TAKLIF QILING</div>
-          <div className="text-3xl font-extrabold mt-1">+500 so'm</div>
+          <div className="text-3xl font-extrabold mt-1">+450 so'm</div>
           <div className="text-xs opacity-90 mt-1">har bir kanalga obuna bo'lgan do'st uchun</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -1825,7 +1833,7 @@ function ReferralScreen({ back }: { back: () => void }) {
             <li>Havolangizni do'stlaringizga yuboring.</li>
             <li>Ular botga /start yuboradi va telefon raqamini yuboradi.</li>
             <li>Rasmiy kanalga obuna bo'lib tasdiqlashadi.</li>
-            <li>Faqat shundan keyin sizga <b>+500 so'm</b> qo'shiladi.</li>
+            <li>Faqat shundan keyin sizga <b>+450 so'm</b> qo'shiladi.</li>
           </ol>
         </div>
       </div>
