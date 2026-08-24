@@ -796,6 +796,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      play_minigame: { Args: { _game: string }; Returns: Json }
       request_deposit: {
         Args: { _amount: number; _details: string; _method: string }
         Returns: Json
