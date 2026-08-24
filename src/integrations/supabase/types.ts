@@ -131,6 +131,7 @@ export type Database = {
           chat_id: number | null
           created_at: string
           first_name: string | null
+          lang: string
           last_bot_message_id: number | null
           last_name: string | null
           phone: string | null
@@ -145,6 +146,7 @@ export type Database = {
           chat_id?: number | null
           created_at?: string
           first_name?: string | null
+          lang?: string
           last_bot_message_id?: number | null
           last_name?: string | null
           phone?: string | null
@@ -159,6 +161,7 @@ export type Database = {
           chat_id?: number | null
           created_at?: string
           first_name?: string | null
+          lang?: string
           last_bot_message_id?: number | null
           last_name?: string | null
           phone?: string | null
