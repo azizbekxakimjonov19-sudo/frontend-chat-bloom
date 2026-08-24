@@ -73,6 +73,18 @@ function LumoWinApp() {
     initFromTelegram(tg);
   }, []);
 
+  useEffect(() => {
+    if (!ready) return;
+    let alive = true;
+    const ping = async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      if (alive) await (supabase as any).rpc("touch_last_seen");
+    };
+    ping().catch(() => {});
+    const id = setInterval(() => { ping().catch(() => {}); }, 5 * 60 * 1000);
+    return () => { alive = false; clearInterval(id); };
+  }, [ready]);
+
   const isTab = (["home", "games", "bonus", "earn", "payment", "payouts", "profile"] as Screen[]).includes(screen);
 
   const openJackpot = (id: string) => { setActiveJp(id); setScreen("jackpot"); };
