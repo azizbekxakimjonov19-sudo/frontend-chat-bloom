@@ -173,6 +173,24 @@ export type Database = {
         }
         Relationships: []
       }
+      deleted_accounts: {
+        Row: {
+          created_at: string
+          reason: string
+          telegram_id: number
+        }
+        Insert: {
+          created_at?: string
+          reason?: string
+          telegram_id: number
+        }
+        Update: {
+          created_at?: string
+          reason?: string
+          telegram_id?: number
+        }
+        Relationships: []
+      }
       deposit_requests: {
         Row: {
           admin_note: string | null
@@ -386,7 +404,9 @@ export type Database = {
           created_at: string
           first_name: string
           id: string
+          inactive_warned_at: string | null
           last_name: string | null
+          last_seen_at: string
           photo_url: string | null
           referral_code: string | null
           referrer_telegram_id: number | null
@@ -403,7 +423,9 @@ export type Database = {
           created_at?: string
           first_name?: string
           id: string
+          inactive_warned_at?: string | null
           last_name?: string | null
+          last_seen_at?: string
           photo_url?: string | null
           referral_code?: string | null
           referrer_telegram_id?: number | null
@@ -420,7 +442,9 @@ export type Database = {
           created_at?: string
           first_name?: string
           id?: string
+          inactive_warned_at?: string | null
           last_name?: string | null
+          last_seen_at?: string
           photo_url?: string | null
           referral_code?: string | null
           referrer_telegram_id?: number | null
@@ -747,6 +771,7 @@ export type Database = {
         Returns: Json
       }
       cron_auto_draw: { Args: never; Returns: Json }
+      cron_cleanup_inactive: { Args: never; Returns: Json }
       draw_jackpot: { Args: { _id: string }; Returns: Json }
       enqueue_bot_notification: {
         Args: { _telegram_id: number; _text: string }
@@ -795,6 +820,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_account_deleted: { Args: { _telegram_id: number }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       play_minigame: { Args: { _game: string }; Returns: Json }
       request_deposit: {
@@ -806,6 +832,7 @@ export type Database = {
         Returns: Json
       }
       spin_bonus: { Args: never; Returns: Json }
+      touch_last_seen: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
