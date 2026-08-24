@@ -851,3 +851,13 @@ export function searchUsers(query: string): UserRecord[] {
 export function currentUser(s: GameState = state): UserRecord {
   return s.users[s.currentUserId] ?? emptyMe;
 }
+
+/* ---------- Mini games (wheel / cards) ---------- */
+export type MiniGameResult = { ok: boolean; error?: string; percent?: number; amount?: number; price?: number; base?: number; need?: number };
+export async function playMiniGame(game: "wheel" | "cards"): Promise<MiniGameResult> {
+  const { data, error } = await (supabase as any).rpc("play_minigame", { _game: game });
+  if (error) return { ok: false, error: error.message };
+  const res = data as MiniGameResult;
+  if (res?.ok) await loadMyDetails();
+  return res;
+}
