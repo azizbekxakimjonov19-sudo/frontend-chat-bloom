@@ -6,7 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Home, Gamepad2, HandCoins, Trophy, User, Plus, ChevronLeft, ChevronRight,
-  ArrowDownToLine, ArrowUpFromLine, Shield, HelpCircle, Users,
+  ArrowDownToLine, ArrowUpFromLine, Shield, HelpCircle,
   BadgeCheck, Wallet, ShieldAlert, Crown, Send, CreditCard, Gift, Play, Sparkles,
 } from "lucide-react";
 
@@ -16,7 +16,7 @@ import {
   claimAdReward, loadAdStatus, playMiniGame,
   createInvestment, claimInvestment, loadInvestments,
   getBonusStatus, spinBonus, claimBonus, type BonusStatus,
-  type JackpotId, type UserTicket,
+  type JackpotId,
 } from "@/lib/game-store";
 
 import { JackpotDetailScreen } from "@/components/JackpotScreens";
@@ -1821,21 +1821,5 @@ function ReferralScreen({ back }: { back: () => void }) {
         </div>
       </div>
     </>
-  );
-}
-
-function SegmentedTabs({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { key: string; label: string }[] }) {
-  return (
-    <div className="flex gap-2">
-      {options.map((o) => {
-        const active = value === o.key;
-        return (
-          <button key={o.key} onClick={() => onChange(o.key)}
-            className={`flex-1 h-10 rounded-xl text-sm font-semibold ${active ? "bg-primary text-primary-foreground shadow-button" : "bg-muted text-muted-foreground"}`}>
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
   );
 }
