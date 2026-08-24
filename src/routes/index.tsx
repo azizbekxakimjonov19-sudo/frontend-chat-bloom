@@ -1364,7 +1364,7 @@ function ProfileScreen({ go }: { go: (s: Screen) => void }) {
     { key: "deposit", label: "Pul kiritish", icon: ArrowDownToLine },
     { key: "withdraw", label: "Pul yechish", icon: ArrowUpFromLine },
     { key: "history", label: "Tranzaksiyalar", icon: Wallet },
-    { key: "referral", label: "Referal dasturi", icon: Users },
+    { key: "rules", label: "Qoidalar", icon: Shield },
     { key: "rules", label: "Qoidalar", icon: Shield },
   ];
   return (
