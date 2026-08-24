@@ -2,6 +2,7 @@ import logoAsset from "@/assets/lumowin-logo.png.asset.json";
 import bannerWheel from "@/assets/banner-wheel.jpg";
 import bannerCards from "@/assets/banner-cards.jpg";
 import bannerReferral from "@/assets/banner-referral.jpg";
+import bannerAds from "@/assets/banner-ads.jpg";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
