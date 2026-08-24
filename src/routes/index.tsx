@@ -1,0 +1,1666 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Home, Ticket, Trophy, User, Plus, ChevronLeft, ChevronRight,
+  ArrowDownToLine, ArrowUpFromLine, Shield, HelpCircle, Users,
+  BadgeCheck, Wallet, ShieldAlert, Crown, Send, CreditCard, Gift, Play, Sparkles,
+} from "lucide-react";
+import {
+  useGame, initFromTelegram, formatMoney, formatTime, drawWinner,
+  isSaleOpen, saleEndsAt, requestDeposit, requestWithdraw,
+  claimAdReward, loadAdStatus,
+  createInvestment, claimInvestment, loadInvestments,
+  getBonusStatus, spinBonus, claimBonus, type BonusStatus,
+  type JackpotId, type UserTicket,
+} from "@/lib/game-store";
+import { JackpotDetailScreen } from "@/components/JackpotScreens";
+import { AdminPanel } from "@/components/AdminPanel";
+
+export const Route = createFileRoute("/")({
+  component: NestPlayApp,
+});
+
+type Screen =
+  | "home" | "tickets" | "bonus" | "earn" | "payment" | "rating" | "profile"
+  | "deposit" | "withdraw" | "history" | "rules" | "faq" | "referral"
+  | "jackpot" | "admin";
+
+const faqs = [
+  "Jackpot qanday ishlaydi?",
+  "Chipta sotib olgandan so'ng pulim qaytadimi?",
+  "G'olib qanday aniqlanadi?",
+  "Pulni qaysi balansdan yechib olsam bo'ladi?",
+  "Minimal yechish summasi qancha?",
+  "Referal dasturi qanday ishlaydi?",
+  "Agar muammo bo'lsa, kimga murojaat qilaman?",
+];
+
+function useNow(ms = 1000) {
+  const [n, setN] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setN(Date.now()), ms);
+    return () => clearInterval(id);
+  }, [ms]);
+  return n;
+}
+
+/* ---------- App ---------- */
+function NestPlayApp() {
+  const [screen, setScreen] = useState<Screen>("home");
+  const [activeJp, setActiveJp] = useState<string | null>(null);
+  const jackpots = useGame((s) => s.jackpots);
+  const authError = useGame((s) => s.authError);
+  const ready = useGame((s) => s.ready);
+
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (tg) {
+      tg.ready?.();
+      tg.expand?.();
+      tg.setHeaderColor?.("#ffffff");
+      tg.setBackgroundColor?.("#ffffff");
+    }
+    // Always attempt auth — inside Telegram uses initData, in dev browser uses fallback.
+    initFromTelegram(tg);
+  }, []);
+
+  const isTab = (["home", "tickets", "bonus", "earn", "payment", "rating", "profile"] as Screen[]).includes(screen);
+
+  const openJackpot = (id: string) => { setActiveJp(id); setScreen("jackpot"); };
+
+  return (
+    <div className="min-h-screen bg-background flex justify-center">
+      <div className="w-full max-w-md min-h-screen bg-background relative pb-24">
+        {authError && (
+          <div className="mx-4 mt-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            Auth: {authError}
+          </div>
+        )}
+        {!ready && !authError && (
+          <div className="mx-4 mt-2 rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+            Yuklanmoqda…
+          </div>
+        )}
+        {screen === "home" && <HomeScreen go={setScreen} openJackpot={openJackpot} />}
+        {screen === "tickets" && <TicketsScreen go={setScreen} />}
+        {screen === "bonus" && <BonusScreen />}
+        {screen === "earn" && <EarnScreen />}
+        {screen === "payment" && <PaymentScreen go={setScreen} />}
+        {screen === "rating" && <RatingScreen />}
+        {screen === "profile" && <ProfileScreen go={setScreen} />}
+        {screen === "deposit" && <DepositScreen back={() => setScreen("payment")} />}
+        {screen === "withdraw" && <WithdrawScreen back={() => setScreen("payment")} />}
+        {screen === "history" && <HistoryScreen back={() => setScreen("profile")} />}
+        {screen === "rules" && <RulesScreen back={() => setScreen("profile")} />}
+        {screen === "faq" && <FaqScreen back={() => setScreen("profile")} />}
+        {screen === "referral" && <ReferralScreen back={() => setScreen("profile")} />}
+        {screen === "jackpot" && activeJp && jackpots[activeJp] && (
+          <JackpotDetailScreen jackpotId={activeJp} back={() => setScreen("home")} />
+        )}
+        {screen === "admin" && <AdminPanel back={() => setScreen("profile")} />}
+
+        {isTab && <BottomNav current={screen} go={setScreen} />}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Shared ---------- */
+function TopBar({ title, onBack, right }: { title: string; onBack?: () => void; right?: React.ReactNode }) {
+  return (
+    <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 h-14 flex items-center justify-between">
+      <div className="w-9">
+        {onBack && (
+          <button onClick={onBack} className="w-9 h-9 -ml-2 flex items-center justify-center rounded-full active:bg-muted">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
+      </div>
+      <h1 className="text-base font-semibold">{title}</h1>
+      <div className="w-9 flex justify-end">{right}</div>
+    </div>
+  );
+}
+
+function BottomNav({ current, go }: { current: Screen; go: (s: Screen) => void }) {
+  const earnEnabled = useGame((s) => s.earnEnabled);
+  const bonusEnabled = useGame((s) => s.bonusEnabled);
+  const all: { key: Screen; label: string; icon: any }[] = [
+    { key: "home", label: "Bosh sahifa", icon: Home },
+    { key: "tickets", label: "Chiptalarim", icon: Ticket },
+    { key: "bonus", label: "Bonus", icon: Sparkles },
+    { key: "earn", label: "Pul ishlash", icon: Gift },
+    { key: "payment", label: "To'lov", icon: CreditCard },
+    { key: "rating", label: "Reyting", icon: Trophy },
+    { key: "profile", label: "Profil", icon: User },
+  ];
+  const items = all.filter((i) => (i.key !== "earn" || earnEnabled) && (i.key !== "bonus" || bonusEnabled));
+  return (
+    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card border-t border-border pb-safe">
+      <div className="grid h-16" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
+        {items.map((it) => {
+          const active = current === it.key;
+          const Icon = it.icon;
+          return (
+            <button key={it.key} onClick={() => go(it.key)} className="flex flex-col items-center justify-center gap-0.5 px-0.5">
+              <Icon className={`w-5 h-5 ${active ? "text-primary" : "text-tab-inactive"}`} />
+              <span className={`text-[9px] font-medium leading-tight text-center truncate w-full ${active ? "text-primary" : "text-tab-inactive"}`}>{it.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- BONUS ---------- */
+const QUEUE_DEADLINE = Date.parse("2026-08-24T18:59:00Z");
+
+function formatLong(ms: number) {
+  const t = Math.max(0, Math.floor(ms / 1000));
+  const d = Math.floor(t / 86400);
+  const h = Math.floor((t % 86400) / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = t % 60;
+  return d > 0 ? `${d} kun ${h} soat ${m} daq` : `${h} soat ${m} daq ${s} son`;
+}
+
+function BonusScreen() {
+  const bonusEnabled = useGame((s) => s.bonusEnabled);
+  const me = useGame((s) => s.users[s.currentUserId]);
+  const [st, setSt] = useState<BonusStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [spinning, setSpinning] = useState(false);
+  const [rolling, setRolling] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const now = useNow(1000);
+
+  const refresh = async () => {
+    const s = await getBonusStatus();
+    setSt(s);
+    setLoading(false);
+  };
+  useEffect(() => { refresh().catch(() => setLoading(false)); }, []);
+
+  // auto-expire on client tick
+  useEffect(() => {
+    if (st?.status === "pending" && st.expiresAt && st.expiresAt <= now) refresh().catch(() => {});
+  }, [now, st?.status, st?.expiresAt]);
+
+  // cooldown finished -> allow new spin
+  useEffect(() => {
+    if (st && st.status !== "pending" && st.status !== "none" && st.nextSpinAt && st.nextSpinAt <= now) refresh().catch(() => {});
+  }, [now, st?.status, st?.nextSpinAt]);
+
+  const runSpin = async () => {
+    if (spinning || busy) return;
+    setMsg(null);
+    setSpinning(true);
+    const started = Date.now();
+    const iv = setInterval(() => {
+      setRolling(26000 + Math.floor(Math.random() * (150000 - 26000)));
+    }, 60);
+    const res = await spinBonus();
+    const elapsed = Date.now() - started;
+    await new Promise((r) => setTimeout(r, Math.max(0, 3200 - elapsed)));
+    clearInterval(iv);
+    setSpinning(false);
+    if (!res?.ok) { setMsg(res?.error || "Xatolik"); await refresh(); return; }
+    setRolling(Number(res.amount));
+    await refresh();
+  };
+
+  const doClaim = async () => {
+    if (busy) return;
+    setBusy(true); setMsg(null);
+    const res = await claimBonus();
+    setBusy(false);
+    if (!res?.ok) setMsg(res?.error || "Xatolik");
+    else setMsg(`Tabriklaymiz! ${formatMoney(Number(res.amount))} so'm bonus o'yin balansingizga qo'shildi.`);
+    await refresh();
+  };
+
+  if (!bonusEnabled) {
+    return (
+      <>
+        <TopBar title="Bonus" />
+        <div className="p-4">
+          <div className="card-soft rounded-2xl p-6 text-center text-sm text-muted-foreground">
+            Bu bo'lim vaqtincha o'chirilgan.
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const balance = me?.balance ?? 0;
+  const amount = st?.amount ?? 0;
+  const need = Math.max(0, amount - balance);
+  const msLeft = st?.status === "pending" ? Math.max(0, (st.expiresAt || 0) - now) : 0;
+  const nextMs = Math.max(0, (st?.nextSpinAt || 0) - now);
+  const display = spinning ? rolling : (st?.status === "pending" || st?.status === "claimed" ? amount : rolling);
+
+  return (
+    <>
+      <TopBar title="Bonus" />
+      <div className="p-4 space-y-3">
+        <div className="jackpot-card rounded-2xl p-5 text-center relative overflow-hidden">
+          <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10" />
+          <div className="absolute -left-10 -bottom-10 w-28 h-28 rounded-full bg-white/10" />
+          <div className="text-[11px] tracking-widest opacity-90">SIZNING BONUSINGIZ</div>
+          <div
+            className={`mt-2 text-4xl font-extrabold tabular-nums transition-transform ${spinning ? "animate-pulse scale-105" : "scale-100"}`}
+          >
+            {display > 0 ? formatMoney(display) : "0"} <span className="text-lg opacity-90">so'm</span>
+          </div>
+          <div className="text-[11px] opacity-90 mt-1">
+            {spinning ? "Hisoblanmoqda…" : "26 000 – 150 000 so'm oralig'ida"}
+          </div>
+          {spinning && (
+            <div className="mt-3 h-1.5 rounded-full bg-white/20 overflow-hidden">
+              <div className="h-full w-1/3 bg-white/70 animate-[slide_1s_linear_infinite]" style={{ animation: "bonusSlide 1.1s linear infinite" }} />
+            </div>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="card-soft rounded-2xl p-5 text-center text-sm text-muted-foreground">Yuklanmoqda…</div>
+        ) : st?.status === "none" ? (
+          <>
+            <div className="card-soft rounded-2xl p-4 text-[12px] text-muted-foreground leading-relaxed">
+              <div className="text-sm font-semibold text-foreground mb-1">Qanday ishlaydi?</div>
+              • Tugmani bosing — tizim sizga <b className="text-foreground">26 000 – 150 000 so'm</b> oralig'ida tasodifiy bonus hisoblaydi.<br />
+              • Bonusni olish uchun o'yin balansingizda <b className="text-foreground">shu summaning o'zi</b> bo'lishi kerak.<br />
+              • Bonus hisoblangandan so'ng <b className="text-foreground">5 soat</b> vaqt beriladi. Shu vaqt ichida olmasangiz, bonus yo'qoladi.<br />
+              • Bonusni <b className="text-foreground">har 48 soatda 1 marta</b> hisoblash mumkin.
+            </div>
+            <button
+              onClick={runSpin}
+              disabled={spinning}
+              className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-base flex items-center justify-center gap-2 shadow-button disabled:opacity-60"
+            >
+              <Sparkles className="w-5 h-5" />
+              {spinning ? "Hisoblanmoqda…" : "Bonusimni hisoblash"}
+            </button>
+          </>
+        ) : st?.status === "pending" ? (
+          <>
+            <div className="card-soft rounded-2xl p-4 space-y-2">
+              <div className="flex justify-between text-[12px]">
+                <span className="text-muted-foreground">Bonus summasi</span>
+                <b className="tabular-nums">{formatMoney(amount)} so'm</b>
+              </div>
+              <div className="flex justify-between text-[12px]">
+                <span className="text-muted-foreground">O'yin balansingiz</span>
+                <b className="tabular-nums">{formatMoney(balance)} so'm</b>
+              </div>
+              <div className="flex justify-between text-[12px]">
+                <span className="text-muted-foreground">Qolgan vaqt</span>
+                <b className="tabular-nums text-primary">{formatTime(msLeft)}</b>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, amount > 0 ? (balance / amount) * 100 : 0)}%` }} />
+              </div>
+            </div>
+            {need > 0 && (
+              <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-[12px] leading-relaxed">
+                Bonusni olish uchun o'yin balansingizda <b>{formatMoney(amount)} so'm</b> bo'lishi kerak.
+                Hozir balansingizda <b>{formatMoney(balance)} so'm</b> bor — yana <b className="text-primary">{formatMoney(need)} so'm</b> to'ldirsangiz,
+                bonus darhol hisobingizga qo'shiladi.
+              </div>
+            )}
+            <button
+              onClick={doClaim}
+              disabled={busy || need > 0}
+              className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-base flex items-center justify-center gap-2 shadow-button disabled:opacity-50"
+            >
+              <Gift className="w-5 h-5" />
+              {need > 0 ? `Yana ${formatMoney(need)} so'm kerak` : "Bonusni olish"}
+            </button>
+          </>
+        ) : st?.status === "claimed" ? (
+          <div className="card-soft rounded-2xl p-6 text-center">
+            <BadgeCheck className="w-10 h-10 text-success mx-auto" />
+            <div className="mt-2 font-semibold">Bonus olingan</div>
+            <div className="text-[12px] text-muted-foreground mt-1">
+              {formatMoney(amount)} so'm o'yin balansingizga qo'shilgan.
+            </div>
+            <div className="mt-3 text-[12px]">
+              Keyingi bonusgacha: <b className="tabular-nums text-primary">{formatLong(nextMs)}</b>
+            </div>
+          </div>
+        ) : (
+          <div className="card-soft rounded-2xl p-6 text-center">
+            <ShieldAlert className="w-10 h-10 text-primary mx-auto" />
+            <div className="mt-2 font-semibold">Bonus muddati tugagan</div>
+            <div className="text-[12px] text-muted-foreground mt-1">
+              {formatMoney(amount)} so'mlik bonusingiz 5 soat ichida olinmagani uchun bekor qilindi.
+            </div>
+            <div className="mt-3 text-[12px]">
+              Keyingi bonusgacha: <b className="tabular-nums text-primary">{formatLong(nextMs)}</b>
+            </div>
+          </div>
+        )}
+
+        {msg && (
+          <div className="rounded-xl border border-border bg-muted px-3 py-2 text-[12px] text-center">{msg}</div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/* ---------- EARN (ads) ---------- */
+function EarnScreen() {
+  const status = useGame((s) => s.adStatus);
+  const earnEnabled = useGame((s) => s.earnEnabled);
+  const [busy, setBusy] = useState(false);
+  const [tick, setTick] = useState(0);
+  const [tab, setTab] = useState<"ads" | "invest">("ads");
+  useEffect(() => { loadAdStatus().catch(() => {}); }, []);
+  useEffect(() => {
+    const id = setInterval(() => setTick((v) => v + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const count = status?.count ?? 0;
+  const limit = status?.limit ?? 4;
+  const reward = status?.amount ?? 250;
+  const done = count >= limit;
+  const msLeft = status?.nextResetAt ? Math.max(0, status.nextResetAt - Date.now()) : 0;
+
+  const waitForSdk = async (timeout = 6000): Promise<((...a: any[]) => Promise<void>) | null> => {
+    const t0 = Date.now();
+    while (Date.now() - t0 < timeout) {
+      const fn = (window as any).show_11429104;
+      if (typeof fn === "function") return fn;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    return null;
+  };
+
+  const watch = async () => {
+    if (busy || done) return;
+    setBusy(true);
+    try {
+      const showFn = await waitForSdk();
+      if (!showFn) {
+        alert("Reklama tarmog'i javob bermayapti. Internetni tekshirib qayta urinib ko'ring.");
+        setBusy(false);
+        return;
+      }
+      await showFn();
+      const res = await claimAdReward();
+      if (!res?.ok) alert(res?.error || "Xatolik");
+    } catch (e: any) {
+      console.warn("Ad error", e);
+      alert("Reklama to'liq ko'rilmadi. Qayta urinib ko'ring.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!earnEnabled) {
+    return (
+      <>
+        <TopBar title="Pul ishlash" />
+        <div className="p-4">
+          <div className="card-soft rounded-2xl p-6 text-center text-sm text-muted-foreground">
+            Bu bo'lim vaqtincha o'chirilgan.
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const totalReward = reward * limit;
+
+  return (
+    <>
+      <TopBar title="Pul ishlash" />
+      <div className="p-4 space-y-3">
+        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-muted">
+          <button
+            onClick={() => setTab("ads")}
+            className={`h-9 rounded-lg text-xs font-semibold ${tab === "ads" ? "bg-background shadow-sm text-primary" : "text-muted-foreground"}`}
+          >Reklama ko'rish</button>
+          <button
+            onClick={() => setTab("invest")}
+            className={`h-9 rounded-lg text-xs font-semibold ${tab === "invest" ? "bg-background shadow-sm text-primary" : "text-muted-foreground"}`}
+          >Pul ko'paytirish</button>
+        </div>
+
+        {tab === "invest" ? <InvestPanel /> : (
+        <>
+        <div className="jackpot-card rounded-2xl p-5 text-center relative overflow-hidden">
+          <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/10" />
+          <div className="text-[11px] tracking-widest opacity-90">REKLAMA KO'RISH</div>
+          <div className="text-3xl font-extrabold mt-1">+{formatMoney(totalReward)} <span className="text-base opacity-90">so'm / kun</span></div>
+          <div className="text-[11px] opacity-90 mt-1">{limit} ta reklama · har biri +{formatMoney(reward)} so'm</div>
+        </div>
+
+        <div className="card-soft rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-semibold text-muted-foreground">BUGUNGI PROGRESS</div>
+            <div className="text-sm font-bold tabular-nums">{count}/{limit}</div>
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div className="h-full bg-primary transition-all" style={{ width: `${(count / limit) * 100}%` }} />
+          </div>
+          <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+            <span>Bugungi topilgan: <b className="text-success">{formatMoney(count * reward)} so'm</b></span>
+            <span>Qoldi: {limit - count}</span>
+          </div>
+        </div>
+
+        {!done ? (
+          <button
+            onClick={watch}
+            disabled={busy}
+            className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-base flex items-center justify-center gap-2 shadow-button disabled:opacity-60"
+          >
+            <Play className="w-5 h-5" />
+            {busy ? "Reklama yuklanmoqda…" : `Reklamani ko'rish (+${formatMoney(reward)} so'm)`}
+          </button>
+        ) : (
+          <div className="card-soft rounded-2xl p-4 text-center">
+            <Gift className="w-8 h-8 text-success mx-auto" />
+            <div className="font-semibold text-sm mt-2">Bugungi limit tugadi 🎉</div>
+            <div className="text-[12px] text-muted-foreground mt-1">
+              Keyingi reklamalar ochiladi:
+            </div>
+            <div className="mt-2 text-2xl font-extrabold tabular-nums text-primary">
+              {formatTime(msLeft)}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              Har kuni 02:00 (Toshkent) da yangilanadi
+            </div>
+          </div>
+        )}
+
+        <div className="card-soft rounded-2xl p-3 text-[11px] text-muted-foreground leading-relaxed">
+          • Kuniga <b>{limit} ta</b> reklama ko'rish mumkin<br />
+          • Har biri uchun <b>{formatMoney(reward)} so'm</b> o'yin balansiga tushadi (jami <b>{formatMoney(totalReward)} so'm</b>)<br />
+          • Limit har kuni <b>02:00 (Toshkent)</b> da yangilanadi
+        </div>
+        </>)}
+      </div>
+    </>
+  );
+}
+
+/* ---------- INVEST (omonat) ---------- */
+const INVEST_TIERS = [
+  { days: 1, percent: 7 },
+  { days: 2, percent: 9 },
+  { days: 3, percent: 12 },
+  { days: 4, percent: 15 },
+];
+function InvestPanel() {
+  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
+  const investments = useGame((s) => s.investments);
+  const [days, setDays] = useState(1);
+  const [amount, setAmount] = useState(30000);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => { loadInvestments().catch(() => {}); }, []);
+  useEffect(() => { const id = setInterval(() => loadInvestments().catch(() => {}), 15000); return () => clearInterval(id); }, []);
+  const now = useNow(1000);
+  const tier = INVEST_TIERS.find((t) => t.days === days)!;
+  const payout = amount + Math.floor(amount * tier.percent / 100);
+
+  const submit = async () => {
+    if (busy) return;
+    setBusy(true);
+    const r = await createInvestment(amount, days);
+    setMsg({ ok: !!r.ok, text: r.ok ? `Omonat yaratildi (${days} kun, ${tier.percent}%)` : (r.error || "Xatolik") });
+    setBusy(false);
+    setTimeout(() => setMsg(null), 3000);
+  };
+
+  const claim = async (id: string) => {
+    setBusy(true);
+    // 1 ad view before claim (best-effort)
+    try {
+      const fn = (window as any).show_11429104;
+      if (typeof fn === "function") await fn().catch(() => {});
+    } catch {}
+    const r = await claimInvestment(id);
+    setMsg({ ok: !!r.ok, text: r.ok ? `+${formatMoney(r.payout ?? 0)} so'm yechish balansiga qo'shildi` : (r.error || "Xatolik") });
+    setBusy(false);
+    setTimeout(() => setMsg(null), 3500);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="jackpot-card rounded-2xl p-4 text-center relative overflow-hidden">
+        <div className="text-[11px] tracking-widest opacity-90">PUL KO'PAYTIRISH</div>
+        <div className="text-2xl font-extrabold mt-1">7% – 15% <span className="text-sm opacity-90">foyda</span></div>
+        <div className="text-[11px] opacity-90 mt-1">1–4 kunga omonat qo'ying, muddat tugagach foyda bilan yechib oling</div>
+      </div>
+
+      <div className="card-soft rounded-2xl p-4 space-y-3">
+        <div>
+          <div className="text-xs font-semibold text-muted-foreground mb-2">MUDDAT</div>
+          <div className="grid grid-cols-4 gap-2">
+            {INVEST_TIERS.map((t) => (
+              <button key={t.days} onClick={() => setDays(t.days)}
+                className={`h-14 rounded-xl border text-center ${days === t.days ? "border-primary bg-primary-soft" : "border-border"}`}>
+                <div className="text-sm font-bold">{t.days} kun</div>
+                <div className={`text-[11px] ${days === t.days ? "text-primary font-semibold" : "text-muted-foreground"}`}>+{t.percent}%</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between text-xs mb-1">
+            <span className="font-semibold text-muted-foreground">MIQDOR (so'm)</span>
+            <span className="text-muted-foreground">Balans: <b>{formatMoney(me.balance)}</b></span>
+          </div>
+          <input type="number" min={30000} max={400000} step={1000}
+            value={amount} onChange={(e) => setAmount(Math.max(0, Number(e.target.value)))}
+            className="w-full h-11 rounded-xl border border-border px-3 text-sm bg-background" />
+          <div className="mt-2 grid grid-cols-4 gap-2">
+            {[30000, 100000, 200000, 400000].map((v) => (
+              <button key={v} onClick={() => setAmount(v)}
+                className="h-8 rounded-lg text-[11px] font-semibold bg-muted text-foreground">{formatMoney(v)}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-xl bg-primary-soft p-3 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Siz qo'yasiz:</span>
+            <b>{formatMoney(amount)} so'm</b>
+          </div>
+          <div className="flex justify-between mt-1">
+            <span className="text-muted-foreground">Foyda ({tier.percent}%):</span>
+            <b className="text-success">+{formatMoney(payout - amount)} so'm</b>
+          </div>
+          <div className="flex justify-between mt-1 pt-2 border-t border-border">
+            <span className="text-muted-foreground">{days} kun keyin olasiz:</span>
+            <b className="text-primary">{formatMoney(payout)} so'm</b>
+          </div>
+        </div>
+
+        <button onClick={submit} disabled={busy || amount < 30000 || amount > 400000 || amount > me.balance}
+          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold disabled:opacity-50">
+          {busy ? "Yaratilmoqda…" : "Omonatga qo'yish"}
+        </button>
+        {msg && <div className={`text-center text-xs font-medium ${msg.ok ? "text-success" : "text-primary"}`}>{msg.text}</div>}
+
+        <div className="text-[11px] text-muted-foreground leading-relaxed pt-1">
+          • Minimal <b>30 000</b>, maksimal <b>400 000</b> so'm<br />
+          • Muddat: 1 kun +7%, 2 kun +9%, 3 kun +12%, 4 kun +15%<br />
+          • Pul faqat <b>o'yin balansidan</b> yechiladi<br />
+          • Muddat tugagach 1 ta reklama ko'rasiz va foyda bilan <b>yechish balansiga</b> tushadi
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs font-semibold text-muted-foreground mb-2 px-1">MENING OMONATLARIM</div>
+        {investments.length === 0 ? (
+          <div className="card-soft rounded-2xl p-4 text-center text-xs text-muted-foreground">Hozircha omonatlar yo'q</div>
+        ) : (
+          <div className="space-y-2">
+            {investments.map((inv) => {
+              const left = Math.max(0, inv.endsAt - now);
+              const ready = left <= 0 && inv.status === "active";
+              return (
+                <div key={inv.id} className="card-soft rounded-2xl p-3">
+                  <div className="flex justify-between text-sm">
+                    <div><b>{formatMoney(inv.amount)}</b> → <b className="text-primary">{formatMoney(inv.payout)}</b> so'm</div>
+                    <div className="text-xs text-muted-foreground">{inv.days} kun · {inv.percent}%</div>
+                  </div>
+                  {inv.status === "claimed" ? (
+                    <div className="mt-2 text-[11px] text-success">✅ Yechildi</div>
+                  ) : ready ? (
+                    <button onClick={() => claim(inv.id)} disabled={busy}
+                      className="mt-2 w-full h-10 rounded-lg bg-success text-primary-foreground text-sm font-semibold disabled:opacity-50">
+                      Reklama ko'rib olish (+{formatMoney(inv.payout)} so'm)
+                    </button>
+                  ) : (
+                    <div className="mt-2 text-[11px] text-muted-foreground">
+                      Qolgan vaqt: <b className="tabular-nums text-foreground">{formatTime(left)}</b>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Avatar({ name, size = 40, photo }: { name: string; size?: number; photo?: string }) {
+  if (photo) {
+    return <img src={photo} alt={name} className="rounded-full object-cover shrink-0" style={{ width: size, height: size }} />;
+  }
+  const initial = name.charAt(0).toUpperCase();
+  return (
+    <div className="rounded-full bg-primary-soft text-primary font-semibold flex items-center justify-center shrink-0"
+      style={{ width: size, height: size, fontSize: size * 0.4 }}>
+      {initial}
+    </div>
+  );
+}
+
+function BrandHeader({ onDeposit }: { onDeposit: () => void }) {
+  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
+  return (
+    <div className="px-4 pt-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <img src="/nestplay-logo.png" alt="NestPlay" className="w-10 h-10 rounded-lg object-contain" />
+          <span className="font-extrabold tracking-tight text-lg">NestPlay</span>
+        </div>
+        <button
+          onClick={onDeposit}
+          className="h-9 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 shadow-button"
+        >
+          <Plus className="w-4 h-4" /> To'ldirish
+        </button>
+      </div>
+
+      {/* Compact dual balance */}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="card-soft rounded-2xl p-3">
+          <div className="flex items-center gap-1.5">
+            <Wallet className="w-3.5 h-3.5 text-primary" />
+            <div className="text-[10px] text-muted-foreground tracking-wider">O'YIN BALANSI</div>
+          </div>
+          <div className="text-lg font-extrabold mt-0.5 truncate">{formatMoney(me.balance)}</div>
+          <div className="text-[10px] text-muted-foreground">so'm · chipta olish</div>
+        </div>
+        <div className="card-soft rounded-2xl p-3 border-2 border-success/25">
+          <div className="flex items-center gap-1.5">
+            <Trophy className="w-3.5 h-3.5 text-success" />
+            <div className="text-[10px] text-muted-foreground tracking-wider">YECHISH BALANSI</div>
+          </div>
+          <div className="text-lg font-extrabold mt-0.5 text-success truncate">{formatMoney(me.withdrawBalance)}</div>
+          <div className="text-[10px] text-muted-foreground">so'm · yechib olish</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- HOME ---------- */
+function HomeScreen({ go, openJackpot }: { go: (s: Screen) => void; openJackpot: (id: string) => void }) {
+  const jackpots = useGame((s) => s.jackpots);
+  const recentWithdrawals = useGame((s) => s.recentWithdrawals);
+  const totalWithdrawn = useGame((s) => s.totalWithdrawn);
+  const now = useNow(1000);
+  const list = Object.values(jackpots)
+    .filter((j) => j.active && j.loaded)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return (
+    <>
+      <BrandHeader onDeposit={() => go("deposit")} />
+
+      {list.length === 0 && (
+        <div className="mx-4 mt-4 card-soft rounded-2xl p-6 text-center text-sm text-muted-foreground">
+          Hozircha faol jackpotlar yo'q
+        </div>
+      )}
+      {list.map((j, idx) => (
+        <JackpotHomeCard
+          key={j.id}
+          variant={idx === 0 ? "weekly" : "3day"}
+          title={j.title.toUpperCase()}
+          j={j}
+          now={now}
+          onOpen={() => openJackpot(j.id)}
+        />
+      ))}
+
+      {/* Recent withdrawals */}
+      <div className="mx-4 mt-5 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <div className="font-semibold text-sm">Oxirgi pul yechib olganlar</div>
+          <span className="text-[11px] font-semibold text-muted-foreground">
+            Jami: {formatMoney(totalWithdrawn)} so'm
+          </span>
+        </div>
+        <div className="card-soft rounded-2xl divide-y divide-border">
+          {recentWithdrawals.length === 0 && <div className="p-4 text-center text-sm text-muted-foreground">Hozircha yechib olishlar yo'q</div>}
+          {recentWithdrawals.map((w) => (
+            <div key={w.id} className="flex items-center gap-3 p-3">
+              <Avatar name={w.firstName} size={36} photo={w.photo} />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm truncate">{w.firstName}</div>
+                <div className="text-[11px] text-muted-foreground truncate">ID {w.telegramId}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-semibold text-sm text-success">+{formatMoney(w.amount)}</div>
+                <div className="text-[10px] text-muted-foreground">
+                  {new Date(w.resolvedAt).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function JackpotHomeCard({
+  variant, title, j, now, onOpen,
+}: {
+  variant: "weekly" | "3day";
+  title: string;
+  j: any;
+  now: number;
+  onOpen: () => void;
+}) {
+  const isWeekly = variant === "weekly";
+  const saleEnd = j.openedAt + j.saleHours * 60000;
+  const saleOpen = j.loaded && !j.frozen && now < saleEnd;
+  const saleLeft = Math.max(0, saleEnd - now);
+  const gameLeft = Math.max(0, j.endsAt - now);
+
+  return (
+    <div className={`mx-4 mt-4 rounded-2xl p-5 relative overflow-hidden ${isWeekly ? "jackpot-card" : "card-soft"}`}>
+      {isWeekly && (
+        <>
+          <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/10" />
+          <div className="absolute right-5 top-4 text-2xl">🏆</div>
+        </>
+      )}
+      <div className={`text-[11px] font-semibold tracking-widest ${isWeekly ? "opacity-90" : "text-muted-foreground"}`}>{title}</div>
+      <div className={`text-3xl font-extrabold mt-1 ${isWeekly ? "" : "text-primary"}`}>
+        {formatMoney(j.prize)} <span className="text-base font-semibold opacity-90">so'm</span>
+      </div>
+      {j.isFree && (
+        <div className={`mt-1 inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${isWeekly ? "bg-white/20" : "bg-success-soft text-success"}`}>
+          BEPUL · 1 kishi 1 marta
+        </div>
+      )}
+      {j.winnerSlots > 1 && (
+        <div className={`mt-0.5 text-[11px] ${isWeekly ? "opacity-90" : "text-muted-foreground"}`}>
+          {j.winnerSlots} ta g'olibga · jami {formatMoney(j.prize * j.winnerSlots)} so'm
+        </div>
+      )}
+
+      {j.frozen && (j.winners?.length > 0 || j.lastWinner) ? (
+        <>
+          <div className={`mt-3 flex items-center justify-between text-[11px] ${isWeekly ? "opacity-90" : "text-muted-foreground"}`}>
+            <span>G'oliblar: <b>{j.winners?.length || 1}</b></span>
+            <span>Chipta: <b>{j.isFree ? "Bepul" : formatMoney(j.ticketPrice)}</b></span>
+            {!j.isFree && <span>Qaytarish: <b>{j.refundPercent}%</b></span>}
+          </div>
+          <InlineWinners j={j} isWeekly={isWeekly} onOpen={onOpen} />
+          {!j.isFree && (
+            <div className={`mt-2 text-center text-[11px] ${isWeekly ? "opacity-90" : "text-muted-foreground"}`}>
+              Qolganlar chipta narxining <b>{j.refundPercent}%</b> Yechish balansiga qaytarib oldi. 🎉 Barchaga omad!
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {/* Two separate timers */}
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className={`rounded-xl p-2 ${isWeekly ? "bg-white/15" : "bg-primary-soft"}`}>
+              <div className={`text-[10px] ${isWeekly ? "opacity-90" : "text-muted-foreground"}`}>Chipta olish vaqti</div>
+              <div className={`text-sm font-bold tabular-nums ${isWeekly ? "" : "text-primary"}`}>
+                {!j.loaded ? "…" : saleOpen ? formatTime(saleLeft) : "Yopiq"}
+              </div>
+            </div>
+            <div className={`rounded-xl p-2 ${isWeekly ? "bg-white/15" : "bg-primary-soft"}`}>
+              <div className={`text-[10px] ${isWeekly ? "opacity-90" : "text-muted-foreground"}`}>O'yin vaqti</div>
+              <div className={`text-sm font-bold tabular-nums ${isWeekly ? "" : "text-primary"}`}>
+                {!j.loaded ? "…" : formatTime(gameLeft)}
+              </div>
+            </div>
+          </div>
+
+          <div className={`mt-3 flex items-center justify-between text-[11px] ${isWeekly ? "opacity-90" : "text-muted-foreground"}`}>
+            <span>Ishtirokchilar: <b>{j.participants.length}</b></span>
+            <span>Chipta: <b>{j.isFree ? "Bepul" : formatMoney(j.ticketPrice)}</b></span>
+            {!j.isFree && <span>Qaytarish: <b>{j.refundPercent}%</b></span>}
+          </div>
+
+          {j.drawing ? (
+            <InlineDrawing j={j} isWeekly={isWeekly} />
+          ) : (
+            <button
+              onClick={onOpen}
+              disabled={!saleOpen}
+              className={`mt-3 w-full h-11 rounded-xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-60 ${
+                isWeekly ? "bg-white text-primary" : "bg-primary text-primary-foreground shadow-button"
+              }`}
+            >
+              {saleOpen ? "Ishtirok etish" : (j.loaded ? "Sotuv yopiq" : "Yuklanmoqda…")}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function InlineDrawing({ j, isWeekly }: { j: any; isWeekly: boolean }) {
+  const parts = j.participants as any[];
+  return (
+    <div className={`mt-3 rounded-xl p-3 ${isWeekly ? "bg-white/15" : "bg-primary-soft"}`}>
+      <div className={`text-[10px] tracking-widest text-center mb-2 ${isWeekly ? "opacity-90" : "text-primary"}`}>
+        🎲 QURA TASHLANMOQDA…
+      </div>
+      {parts.length > 0 ? (
+        <div className="relative overflow-hidden h-14 rounded-lg">
+          <div
+            className="flex items-center gap-3 absolute top-1/2 -translate-y-1/2 whitespace-nowrap"
+            style={{ animation: "nestSpinStrip 6s linear infinite", left: 0 }}
+          >
+            {[...parts, ...parts, ...parts].map((p, i) => (
+              <div key={p.ticketId + i} className="flex flex-col items-center min-w-[40px]">
+                <Avatar name={p.firstName} size={28} photo={p.photo} />
+              </div>
+            ))}
+          </div>
+          <div className={`absolute inset-y-0 left-1/2 -translate-x-1/2 w-10 border-2 rounded-lg pointer-events-none ${isWeekly ? "border-white" : "border-primary"}`} />
+        </div>
+      ) : (
+        <div className={`text-center text-xs ${isWeekly ? "opacity-90" : "text-muted-foreground"}`}>Ishtirokchi yo'q</div>
+      )}
+      <style>{`@keyframes nestSpinStrip { from { transform: translate3d(0,-50%,0); } to { transform: translate3d(-33.333%,-50%,0); } }`}</style>
+    </div>
+  );
+}
+
+function InlineWinners({ j, isWeekly, onOpen }: { j: any; isWeekly: boolean; onOpen: () => void }) {
+  const list: any[] = (j.winners?.length ? j.winners : j.lastWinner ? [j.lastWinner] : []);
+  if (list.length === 0) return null;
+  const multi = list.length > 1;
+  return (
+    <button
+      onClick={onOpen}
+      className={`mt-3 w-full rounded-xl p-2.5 text-left active:scale-[0.99] transition-transform ${isWeekly ? "bg-white/15" : "bg-success-soft"}`}
+    >
+      <div className={`text-[9px] tracking-widest mb-1.5 ${isWeekly ? "opacity-90" : "text-muted-foreground"}`}>
+        🏆 {multi ? `${list.length} TA G'OLIB` : "G'OLIB"} · har biri {formatMoney(list[0].amount)} so'm
+      </div>
+      <div className={multi ? "grid grid-cols-2 gap-x-2 gap-y-1.5" : ""}>
+        {list.map((w) => (
+          <div key={w.userId} className="flex items-center gap-2 min-w-0">
+            <div className="relative shrink-0">
+              <Avatar name={w.firstName} size={multi ? 28 : 40} photo={w.photo} />
+              <Crown className={`absolute -top-1.5 left-1/2 -translate-x-1/2 ${multi ? "w-3 h-3" : "w-4 h-4"} text-gold drop-shadow`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className={`font-bold ${multi ? "text-[11px]" : "text-sm"} truncate ${isWeekly ? "" : "text-foreground"}`}>{w.firstName}</div>
+              <div className={`${multi ? "text-[10px]" : "text-xs"} font-extrabold ${isWeekly ? "opacity-90" : "text-success"}`}>
+                +{formatMoney(w.amount)} so'm
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </button>
+  );
+}
+
+/* ---------- TICKETS ---------- */
+function TicketsScreen({ go }: { go: (s: Screen) => void }) {
+  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
+  const jackpots = useGame((s) => s.jackpots);
+  const now = useNow(1000);
+  // me.tickets already loaded DESC (newest first) — keep that order
+  const tickets = me.tickets;
+
+  return (
+    <>
+      <TopBar title="Chiptalarim" />
+      <div className="p-4">
+        {tickets.length === 0 && (
+          <div className="card-soft rounded-2xl p-6 text-center">
+            <Ticket className="w-10 h-10 mx-auto text-primary mb-2" />
+            <div className="font-semibold">Hali chipta yo'q</div>
+            <div className="text-xs text-muted-foreground mt-1">Bosh sahifadan jackpotga qo'shiling</div>
+            <button onClick={() => go("home")} className="mt-4 h-11 px-6 rounded-xl bg-primary text-primary-foreground font-semibold shadow-button">
+              Bosh sahifaga
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {tickets.map((t) => (
+            <TicketCard
+              key={t.ticketId}
+              t={t}
+              drawAt={jackpots[t.jackpotId]?.endsAt ?? t.roundEndsAt}
+              now={now}
+            />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function TicketCard({ t, drawAt, now }: { t: UserTicket; drawAt: number; now: number }) {
+  const timeLeft = t.status === "active" ? drawAt - now : 0;
+  const jackpots = useGame((s) => s.jackpots);
+  const jackpotName = jackpots[t.jackpotId]?.title ?? t.jackpotId;
+  const refundPct = jackpots[t.jackpotId]?.refundPercent ?? 110;
+
+  let statusLabel = "Faol";
+  let statusClass = "bg-info-soft text-info";
+  if (t.status === "won") { statusLabel = "MEGA YUTUQ"; statusClass = "bg-success text-white"; }
+  else if (t.status === "refunded") { statusLabel = `${refundPct}% qaytdi`; statusClass = "bg-success-soft text-success"; }
+  else if (t.status === "finished") { statusLabel = "Tugadi"; statusClass = "bg-muted text-muted-foreground"; }
+
+  return (
+    <div className="card-soft rounded-xl p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-sm">{t.ticketId}</div>
+          <div className="text-[11px] text-muted-foreground truncate">{jackpotName}</div>
+          <div className="text-primary font-bold text-base mt-1">{formatMoney(t.price)} so'm</div>
+        </div>
+        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${statusClass}`}>
+          {statusLabel}
+        </span>
+      </div>
+      <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+        <span>{new Date(t.at).toLocaleString("ru-RU")}</span>
+        {t.status === "active" ? (
+          <span className="font-medium text-foreground tabular-nums">O'yingacha: {formatTime(timeLeft)}</span>
+        ) : t.wonAmount ? (
+          <span className="font-semibold text-success">+{formatMoney(t.wonAmount)} so'm</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- PAYMENT ---------- */
+function PaymentScreen({ go }: { go: (s: Screen) => void }) {
+  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
+  const myReqs = useGame((s) => s.myWithdrawRequests);
+  const now = useNow(60000);
+  return (
+    <>
+      <TopBar title="To'lov" />
+      <div className="p-4 space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="card-soft rounded-2xl p-3">
+            <div className="text-[10px] text-muted-foreground tracking-wider">O'YIN BALANSI</div>
+            <div className="text-lg font-extrabold mt-0.5">{formatMoney(me.balance)}</div>
+            <div className="text-[10px] text-muted-foreground">so'm</div>
+          </div>
+          <div className="card-soft rounded-2xl p-3 border-2 border-success/25">
+            <div className="text-[10px] text-muted-foreground tracking-wider">YECHISH BALANSI</div>
+            <div className="text-lg font-extrabold mt-0.5 text-success">{formatMoney(me.withdrawBalance)}</div>
+            <div className="text-[10px] text-muted-foreground">so'm</div>
+          </div>
+        </div>
+
+        <button onClick={() => go("deposit")} className="w-full card-soft rounded-2xl p-4 flex items-center gap-3 active:scale-[0.99]">
+          <div className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
+            <ArrowDownToLine className="w-6 h-6" />
+          </div>
+          <div className="flex-1 text-left">
+            <div className="font-semibold">Pul kiritish</div>
+            <div className="text-xs text-muted-foreground">O'yin balansini to'ldirish</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </button>
+
+        <button onClick={() => go("withdraw")} className="w-full card-soft rounded-2xl p-4 flex items-center gap-3 active:scale-[0.99]">
+          <div className="w-12 h-12 rounded-xl bg-success text-white flex items-center justify-center">
+            <ArrowUpFromLine className="w-6 h-6" />
+          </div>
+          <div className="flex-1 text-left">
+            <div className="font-semibold">Pul yechish</div>
+            <div className="text-xs text-muted-foreground">Yutuq balansidan yechib olish</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </button>
+
+        {/* So'rovlarim */}
+        <div className="mt-2">
+          <div className="font-semibold text-sm mb-2">So'rovlarim</div>
+          <div className="card-soft rounded-2xl divide-y divide-border">
+            {myReqs.length === 0 && (
+              <div className="p-4 text-center text-xs text-muted-foreground">Hozircha so'rov yo'q</div>
+            )}
+            {myReqs.map((r) => {
+              const isPending = r.status === "pending";
+              const isApproved = r.status === "approved" && !r.paidAt;
+              const isPaid = r.status === "approved" && !!r.paidAt;
+              // 48h countdown from createdAt
+              const deadline = r.createdAt + 48 * 3600000;
+              const leftMs = Math.max(0, deadline - now);
+              const h = Math.floor(leftMs / 3600000);
+              const m = Math.floor((leftMs % 3600000) / 60000);
+              // Eski (navbatdagi) so'rovlar uchun — 24-avgustgacha
+              const queued = !!r.queueNumber && !isPaid && r.status !== "rejected";
+              const qLeft = Math.max(0, QUEUE_DEADLINE - now);
+              const qd = Math.floor(qLeft / 86400000);
+              const qh = Math.floor((qLeft % 86400000) / 3600000);
+              const qm = Math.floor((qLeft % 3600000) / 60000);
+
+              let color = "text-yellow-600 bg-yellow-100";
+              let label = "Kutilmoqda";
+              if (r.status === "approved") { color = isPaid ? "text-success bg-success-soft" : "text-blue-600 bg-blue-100"; label = isPaid ? "To'landi" : "Tasdiqlandi · to'lov jarayonida"; }
+              if (r.status === "rejected") { color = "text-destructive bg-destructive/10"; label = "Rad etildi"; }
+
+              return (
+                <div key={r.id} className="p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className={`text-base font-bold ${r.status === "rejected" ? "text-destructive" : r.status === "pending" ? "text-yellow-600" : isPaid ? "text-success" : "text-blue-600"}`}>
+                        {formatMoney(r.amount)} so'm
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {new Date(r.createdAt).toLocaleString("ru-RU")} · {r.method.toUpperCase()}
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${color} flex items-center gap-1`}>
+                      {isApproved && <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />}
+                      {label}
+                    </span>
+                  </div>
+                  {isPending && !queued && (
+                    <div className="mt-1.5 text-[11px] text-muted-foreground">
+                      To'lov muddati: <b className="text-foreground tabular-nums">{h}s {m}d</b> qoldi
+                    </div>
+                  )}
+                  {queued && (
+                    <div className="mt-2 rounded-xl border border-primary/30 bg-primary/5 p-2.5 text-[11px] leading-relaxed">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-muted-foreground">Navbat raqamingiz</span>
+                        <b className="text-primary tabular-nums text-sm">#{r.queueNumber}</b>
+                      </div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-muted-foreground">Taxminiy to'lov muddati</span>
+                        <b className="text-foreground tabular-nums">24-avgust ({qd} kun {qh} soat {qm} daq)</b>
+                      </div>
+                      Reklama xizmatidan to'lov kechikayotgani sababli to'lovlaringiz ham kechikmoqda.
+                      Biz reklama bilan birinchi marta ishlaganimiz uchun birinchi to'lov 1 oyda amalga oshirilar ekan.
+                      Shu sababli to'lovlar kechikmoqda. To'lovingiz navbat bo'yicha, ko'rsatilgan muddat ichida albatta amalga oshiriladi. Sabringiz uchun rahmat!
+                    </div>
+                  )}
+                  {r.status === "rejected" && r.adminNote && (
+                    <div className="mt-1.5 text-[11px] text-destructive">Sabab: {r.adminNote}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="card-soft rounded-2xl p-3 text-[11px] text-muted-foreground">
+          Chiptalar faqat <b className="text-foreground">O'yin balansi</b> orqali olinadi.
+          Yutuq va qaytarish esa mos ravishda <b className="text-success">Yechish balansi</b> va o'yin balansiga tushadi.
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ---------- RATING ---------- */
+function RatingScreen() {
+  const [tab, setTab] = useState<"users" | "referral">("users");
+  const topBalances = useGame((s) => s.topBalances);
+  const topReferrers = useGame((s) => s.topReferrers);
+  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
+
+  const list = tab === "users" ? topBalances : topReferrers;
+  const top3 = list.slice(0, 3);
+  const rest = list.slice(3, 20);
+  const myRank = list.findIndex((u) => u.telegramId === me.id) + 1;
+  const unit = tab === "users" ? "so'm" : "kishi";
+  const format = (n: number) => tab === "users" ? formatMoney(n) : String(n);
+  const myScore = tab === "users" ? (me.balance + me.withdrawBalance) : 0;
+
+  return (
+    <>
+      <TopBar title="Reyting" />
+      <div className="p-4">
+        <SegmentedTabs value={tab} onChange={(v) => setTab(v as any)} options={[
+          { key: "users", label: "Eng ko'p balans" },
+          { key: "referral", label: "Eng ko'p referal" },
+        ]} />
+
+        {top3.length >= 3 && (
+          <div className="mt-6 flex items-end justify-center gap-3">
+            <PodiumSlot rank={2} name={top3[1].firstName} photo={top3[1].photo} score={format(top3[1].score)} unit={unit} height="h-14" />
+            <PodiumSlot rank={1} name={top3[0].firstName} photo={top3[0].photo} score={format(top3[0].score)} unit={unit} height="h-20" featured />
+            <PodiumSlot rank={3} name={top3[2].firstName} photo={top3[2].photo} score={format(top3[2].score)} unit={unit} height="h-10" />
+          </div>
+        )}
+
+        <div className="mt-5 card-soft rounded-2xl divide-y divide-border">
+          {list.length === 0 && <div className="p-4 text-center text-sm text-muted-foreground">Ma'lumot yo'q</div>}
+          {rest.map((u, i) => (
+            <div key={u.telegramId} className="flex items-center gap-3 p-3">
+              <div className="w-6 text-center text-sm font-semibold text-muted-foreground">{i + 4}</div>
+              <Avatar name={u.firstName} size={36} photo={u.photo} />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm truncate">{u.firstName}</div>
+                <div className="text-[10px] text-muted-foreground truncate">{u.username ? `@${u.username}` : `ID ${u.telegramId}`}</div>
+              </div>
+              <div className="text-sm font-semibold tabular-nums">{format(u.score)} <span className="text-muted-foreground text-[10px]">{unit}</span></div>
+            </div>
+          ))}
+        </div>
+
+        {tab === "users" && myRank > 0 && (
+          <div className="mt-3 card-soft rounded-2xl p-3 flex items-center gap-3 border-2 border-primary/30">
+            <div className="w-6 text-center text-sm font-semibold text-primary">{myRank}</div>
+            <Avatar name={me.firstName} size={36} photo={me.photo} />
+            <div className="flex-1 font-medium text-sm text-primary">Siz</div>
+            <div className="text-sm font-semibold text-primary tabular-nums">{formatMoney(myScore)} <span className="text-[10px]">so'm</span></div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function PodiumSlot({ rank, name, photo, score, unit, height, featured }: { rank: number; name: string; photo?: string; score: string; unit: string; height: string; featured?: boolean }) {
+  const medal = rank === 1 ? "👑" : rank === 2 ? "🥈" : "🥉";
+  const short = name.length > 8 ? name.slice(0, 8) + "…" : name;
+  return (
+    <div className="flex flex-col items-center flex-1 min-w-0">
+      <div className="text-xl mb-1">{medal}</div>
+      <div className={`rounded-full overflow-hidden ${featured ? "ring-4 ring-primary" : "ring-2 ring-border"}`}>
+        <Avatar name={name} size={featured ? 64 : 48} photo={photo} />
+      </div>
+      <div className="font-semibold text-xs mt-1.5 truncate w-full text-center">{short}</div>
+      <div className="text-[10px] text-primary font-semibold tabular-nums">{score} {unit}</div>
+      <div className={`mt-1.5 ${height} w-full bg-primary-soft rounded-t-lg flex items-start justify-center pt-1 font-bold text-primary text-sm`}>{rank}</div>
+    </div>
+  );
+}
+
+/* ---------- PROFILE ---------- */
+function ProfileScreen({ go }: { go: (s: Screen) => void }) {
+  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
+  const items: { key: Screen; label: string; icon: any }[] = [
+    { key: "deposit", label: "Pul kiritish", icon: ArrowDownToLine },
+    { key: "withdraw", label: "Pul yechish", icon: ArrowUpFromLine },
+    { key: "history", label: "Tranzaksiyalar", icon: Wallet },
+    { key: "referral", label: "Referal dasturi", icon: Users },
+    { key: "rules", label: "Qoidalar", icon: Shield },
+  ];
+  return (
+    <>
+      <TopBar title="Profil" />
+      <div className="p-4">
+        <div className="card-soft rounded-2xl p-4 flex items-center gap-3">
+          <Avatar name={me.firstName} size={56} photo={me.photo} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1">
+              <div className="font-bold">{me.firstName}</div>
+              <BadgeCheck className="w-4 h-4 text-primary" />
+            </div>
+            <div className="text-xs text-muted-foreground">{me.username ? `@${me.username} · ` : ""}ID: {me.id}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <div className="card-soft rounded-2xl p-3">
+            <div className="text-[10px] text-muted-foreground tracking-wider">O'YIN BALANSI</div>
+            <div className="text-lg font-extrabold mt-0.5">{formatMoney(me.balance)} <span className="text-xs font-medium text-muted-foreground">so'm</span></div>
+          </div>
+          <div className="card-soft rounded-2xl p-3 border-2 border-success/25">
+            <div className="text-[10px] text-muted-foreground tracking-wider">YECHISH BALANSI</div>
+            <div className="text-lg font-extrabold mt-0.5 text-success">{formatMoney(me.withdrawBalance)} <span className="text-xs font-medium text-muted-foreground">so'm</span></div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          {[
+            { label: "Jami chipta", value: `${me.tickets.length}` },
+            { label: "Yutuqlar", value: `${me.tickets.filter(t=>t.status==="won").length}` },
+            { label: "Status", value: me.banned ? "Bloklangan" : "Faol" },
+          ].map((s, i) => (
+            <div key={i} className="card-soft rounded-xl p-2.5 text-center">
+              <div className="text-[10px] text-muted-foreground">{s.label}</div>
+              <div className="font-bold text-sm mt-0.5">{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {me.isAdmin && (
+          <button
+            onClick={() => go("admin")}
+            className="mt-3 w-full card-soft rounded-2xl p-4 flex items-center gap-3 border-2 border-primary/30"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div className="flex-1 text-left">
+              <div className="font-semibold text-sm">Admin panel</div>
+              <div className="text-xs text-muted-foreground">Foydalanuvchilar, jackpot va statistika</div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-primary" />
+          </button>
+        )}
+
+        <div className="card-soft rounded-2xl mt-3 divide-y divide-border overflow-hidden">
+          {items.map((it, i) => {
+            const Icon = it.icon;
+            return (
+              <button key={i} onClick={() => go(it.key)} className="w-full flex items-center gap-3 p-3.5 active:bg-muted">
+                <Icon className="w-5 h-5 text-muted-foreground" />
+                <div className="flex-1 text-left text-sm font-medium">{it.label}</div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            );
+          })}
+          <button
+            onClick={() => {
+              const url = `https://t.me/${SUPPORT_USERNAME}`;
+              const tg = (window as any)?.Telegram?.WebApp;
+              if (tg?.openTelegramLink) tg.openTelegramLink(url); else window.open(url, "_blank");
+            }}
+            className="w-full flex items-center gap-3 p-3.5 active:bg-muted"
+          >
+            <HelpCircle className="w-5 h-5 text-muted-foreground" />
+            <div className="flex-1 text-left text-sm font-medium">Yordam va qo'llab-quvvatlash</div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ---------- Deposit / Withdraw ---------- */
+const MIN_AMOUNT = 10000;
+const SUPPORT_USERNAME = "NestPlay_Support";
+
+function DepositScreen({ back }: { back: () => void }) {
+  const [amount, setAmount] = useState("100 000");
+  const [method, setMethod] = useState("humo");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
+  const methods = [
+    { key: "humo", label: "HUMO" }, { key: "uzcard", label: "UZCARD" },
+    { key: "click", label: "Click" }, { key: "payme", label: "Payme" },
+    { key: "visa", label: "VISA/MC" }, { key: "bank", label: "Bank" },
+  ];
+  const submit = async () => {
+    const n = parseInt(amount.replace(/\D/g, ""), 10);
+    if (!n || n < MIN_AMOUNT) {
+      setMsg({ ok: false, text: `Minimal to'ldirish: ${formatMoney(MIN_AMOUNT)} so'm` });
+      setTimeout(() => setMsg(null), 3000); return;
+    }
+    const r = await requestDeposit(n, method);
+    if (!r.ok) { setMsg({ ok: false, text: r.error || "Xatolik" }); setTimeout(() => setMsg(null), 2500); return; }
+    const methodLabel = methods.find((m) => m.key === method)?.label || method;
+    const text =
+`NestPlay hisob to'ldirish so'rovi
+Ism: ${me.firstName}${me.username ? " (@" + me.username + ")" : ""}
+Telegram ID: ${me.id}
+Summa: ${formatMoney(n)} so'm
+To'lov tizimi: ${methodLabel}
+Iltimos, to'lovni tekshirib tasdiqlang.`;
+    try { await navigator.clipboard?.writeText(text); } catch {}
+    const url = `https://t.me/${SUPPORT_USERNAME}?text=${encodeURIComponent(text)}`;
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (tg?.openTelegramLink) tg.openTelegramLink(url); else window.open(url, "_blank");
+    setMsg({ ok: true, text: "So'rov yuborildi. Adminga xabar yuboring." });
+    setTimeout(() => setMsg(null), 3500);
+  };
+  return (
+    <>
+      <TopBar title="Pul kiritish" onBack={back} />
+      <div className="p-4">
+        <div className="card-soft rounded-2xl p-4">
+          <div className="text-[11px] text-muted-foreground">O'yin balansi</div>
+          <div className="text-2xl font-bold mt-1">{formatMoney(me.balance)} so'm</div>
+        </div>
+        <div className="mt-4 font-semibold">To'lov usuli</div>
+        <div className="grid grid-cols-2 gap-3 mt-2">
+          {methods.map((m) => (
+            <button key={m.key} onClick={() => setMethod(m.key)}
+              className={`card-soft rounded-2xl p-3 h-16 text-left relative ${method === m.key ? "ring-2 ring-primary" : ""}`}>
+              <div className="font-semibold text-sm">{m.label}</div>
+              <div className={`absolute top-3 right-3 w-4 h-4 rounded-full border-2 ${method === m.key ? "border-primary bg-primary" : "border-border"}`} />
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 font-semibold">Miqdor</div>
+        <div className="grid grid-cols-4 gap-2 mt-2">
+          {["50 000", "100 000", "200 000", "500 000"].map((v) => (
+            <button key={v} onClick={() => setAmount(v)}
+              className={`h-11 rounded-xl text-sm font-semibold ${amount === v ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{v}</button>
+          ))}
+        </div>
+        <div className="card-soft rounded-xl mt-2 flex items-center px-4 h-12">
+          <input value={amount} onChange={(e) => setAmount(e.target.value)} className="flex-1 bg-transparent outline-none text-base" />
+          <span className="text-muted-foreground text-sm">so'm</span>
+        </div>
+        <div className="mt-2 text-[11px] text-muted-foreground">
+          Minimal: <b>{formatMoney(MIN_AMOUNT)} so'm</b>. Tugmani bosgach adminga yo'naltirasiz.
+        </div>
+        <button onClick={submit} className="mt-5 w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold shadow-button">To'ldirish</button>
+        {msg && <div className={`mt-2 text-center text-xs font-medium ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.text}</div>}
+      </div>
+    </>
+  );
+}
+
+function WithdrawScreen({ back }: { back: () => void }) {
+  const [amount, setAmount] = useState("100 000");
+  const [method, setMethod] = useState("humo");
+  const [details, setDetails] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
+  const [sending, setSending] = useState(false);
+  const submit = async () => {
+    if (sending) return;
+    const n = parseInt(amount.replace(/\D/g, ""), 10);
+    if (!n || n < MIN_AMOUNT) { setMsg({ ok: false, text: `Minimal yechish: ${formatMoney(MIN_AMOUNT)} so'm` }); setTimeout(() => setMsg(null), 3000); return; }
+    if (n > me.withdrawBalance) { setMsg({ ok: false, text: "Yechish balansi yetarli emas" }); setTimeout(() => setMsg(null), 3000); return; }
+    const cardDigits = details.replace(/\D/g, "");
+    if (cardDigits.length !== 16) { setMsg({ ok: false, text: "Karta raqami 16 xonali bo'lishi kerak" }); setTimeout(() => setMsg(null), 3000); return; }
+    setSending(true);
+    try {
+      const r = await requestWithdraw(n, method, cardDigits);
+      setMsg({ ok: r.ok, text: r.ok ? `${formatMoney(n)} so'm so'rovi yuborildi` : (r.error || "Xatolik") });
+      setTimeout(() => setMsg(null), 3000);
+    } finally {
+      setSending(false);
+    }
+  };
+  return (
+    <>
+      <TopBar title="Pul yechish" onBack={back} />
+      <div className="p-4">
+        <div className="card-soft rounded-2xl p-4 border-2 border-success/25">
+          <div className="text-[11px] text-muted-foreground">Yechish balansi</div>
+          <div className="text-2xl font-bold mt-1 text-success">{formatMoney(me.withdrawBalance)} so'm</div>
+        </div>
+        <div className="mt-4 font-semibold">Usul</div>
+        <div className="grid grid-cols-3 gap-2 mt-2">
+          {[{ key: "humo", label: "HUMO" }, { key: "uzcard", label: "UZCARD" }, { key: "payme", label: "Payme" }].map((m) => (
+            <button key={m.key} onClick={() => setMethod(m.key)}
+              className={`card-soft rounded-xl h-14 font-semibold text-sm ${method === m.key ? "ring-2 ring-primary text-primary" : ""}`}>
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 font-semibold">Karta / hisob raqami</div>
+        <input
+          value={details}
+          onChange={(e) => {
+            const digits = e.target.value.replace(/\D/g, "").slice(0, 16);
+            const grouped = digits.replace(/(.{4})/g, "$1 ").trim();
+            setDetails(grouped);
+          }}
+          inputMode="numeric"
+          maxLength={19}
+          placeholder="8600 0000 0000 0000"
+          className="mt-2 w-full card-soft rounded-xl px-4 h-12 outline-none tracking-widest"
+        />
+        <div className="text-[11px] text-muted-foreground mt-1">16 xonali karta raqami</div>
+        <div className="mt-4 font-semibold">Miqdor</div>
+        <div className="card-soft rounded-xl mt-2 flex items-center px-4 h-12">
+          <input value={amount} onChange={(e) => setAmount(e.target.value)} className="flex-1 bg-transparent outline-none text-base" />
+          <span className="text-muted-foreground text-sm">so'm</span>
+        </div>
+        <ul className="mt-3 text-xs text-muted-foreground space-y-1">
+          <li>› Minimal yechish: <b>{formatMoney(MIN_AMOUNT)} so'm</b></li>
+          <li>› 48 soat ichida amalga oshiriladi</li>
+        </ul>
+        <button onClick={submit} disabled={sending}
+          className="mt-5 w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold shadow-button disabled:opacity-50">
+          {sending ? "Yuborilmoqda..." : "Yechishni so'rash"}
+        </button>
+        {msg && <div className={`mt-2 text-center text-xs font-medium ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.text}</div>}
+      </div>
+    </>
+  );
+}
+
+/* ---------- History (transactions) ---------- */
+function HistoryScreen({ back }: { back: () => void }) {
+  const txs = useGame((s) => s.transactions.filter((t) => t.userId === s.currentUserId));
+  return (
+    <>
+      <TopBar title="Tranzaksiyalar" onBack={back} />
+      <div className="p-4">
+        <div className="card-soft rounded-2xl divide-y divide-border">
+          {txs.length === 0 && (
+            <div className="p-6 text-center text-sm text-muted-foreground">Hozircha tranzaksiya yo'q</div>
+          )}
+          {txs.map((t) => (
+            <div key={t.id} className="p-3 flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${t.amount > 0 ? "bg-success-soft text-success" : "bg-primary-soft text-primary"}`}>
+                {t.amount > 0 ? <ArrowDownToLine className="w-4 h-4" /> : <ArrowUpFromLine className="w-4 h-4" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium truncate">{t.note || t.type}</div>
+                <div className="text-[10px] text-muted-foreground">{new Date(t.at).toLocaleString("ru-RU")}</div>
+              </div>
+              <div className={`text-sm font-bold ${t.amount > 0 ? "text-success" : "text-primary"}`}>
+                {t.amount > 0 ? "+" : ""}{formatMoney(t.amount)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function RulesScreen({ back }: { back: () => void }) {
+  const sections: { title: string; items: string[] }[] = [
+    { title: "🎯 Yo'riqnoma", items: [
+      "O'ynashni boshlash uchun Hisobni to'ldirish bo'limiga kirib, to'lov usuli va summani tanlang (minimal 10 000 so'm).",
+      "«To'lov qilish» tugmasini bosganingizdan so'ng tayyor xabar avtomatik ravishda administratorga yuboriladi. Tasdiqlangach, mablag' O'yin balansiga tushadi.",
+      "So'ng jackpotni tanlab «Chipta sotib olish» tugmasini bosing. Chipta narxi O'yin balansidan yechiladi va siz avtomatik ishtirokchi bo'lasiz.",
+      "Belgilangan vaqt tugagach, tizim avtomatik qura tashlaydi va g'olib(lar)ni aniqlaydi. G'olib bo'lsangiz yutuq summasi Yechish balansiga o'tkaziladi.",
+      "Pul yechish uchun Yechish balansida kamida 10 000 so'm bo'lishi kerak. «Pul yechish» bo'limiga kirib, karta raqamingiz va summani kiriting.",
+      "To'lov holatini ilova orqali Kutilmoqda, To'lanmoqda, To'landi yoki Rad etildi ko'rinishida kuzatishingiz mumkin.",
+    ]},
+    { title: "🏆 Umumiy qoidalar", items: [
+      "NestPlay — Telegram Mini App. Har bir foydalanuvchi Telegram ID orqali avtomatik aniqlanadi.",
+      "Har bir foydalanuvchi uchun alohida hisob, balans va o'yinlar tarixi yuritiladi.",
+      "Platformada Haftalik va Kunlik Jackpot o'yinlari mavjud.",
+      "Har bir jackpot uchun chipta narxi, yutuq jamg'armasi, o'yin muddati va g'oliblar soni administrator tomonidan belgilanadi.",
+      "Administrator zarurat tug'ilganda o'yin parametrlarini oldindan e'lon qilgan holda o'zgartirish huquqiga ega.",
+    ]},
+    { title: "💰 Balans turlari", items: [
+      "🎮 O'yin balansi — Hisobni to'ldirish orqali mablag' shu balansga tushadi. Chiptalar faqat O'yin balansidan xarid qilinadi.",
+      "💳 Yechish balansi — Jackpot yutuqlari va bonuslar faqat ushbu balansga tushadi.",
+      "Pul yechish faqat Yechish balansidan amalga oshiriladi. O'yin balansidagi mablag'ni bevosita yechib olish mumkin emas.",
+    ]},
+    { title: "🎟 Chipta va o'yin tartibi", items: [
+      "Chipta faqat O'yin balansi orqali xarid qilinadi.",
+      "Har bir xarid qilingan chipta noyob tartib raqamiga ega bo'ladi.",
+      "Chipta savdosi administrator belgilagan muddat davomida ochiq bo'ladi. Vaqti tugagach avtomatik yopiladi.",
+      "O'yin yakunlangach tizim avtomatik ravishda tasodifiy qura tashlaydi va g'olib(lar)ni aniqlaydi.",
+      "Taymer server vaqti asosida ishlaydi. Ilovani yopish yoki qayta ochish taymerni o'zgartirmaydi.",
+    ]},
+    { title: "🏅 G'oliblarni aniqlash", items: [
+      "G'oliblar soni administrator tomonidan belgilanadi.",
+      "Har bir g'olib belgilangan to'liq yutuq summasini qo'lga kiritadi.",
+      "Yutuq avtomatik ravishda Yechish balansiga o'tkaziladi.",
+      "G'oliblar tasodifiy algoritm orqali aniqlanadi va barcha ishtirokchilar uchun yutish imkoniyati yaratiladi.",
+    ]},
+    { title: "🔄 Mablag'ni qaytarish", items: [
+      "Yutmagan ishtirokchilarga chipta narxining ma'lum qismi (odatda 110%) Yechish balansiga qaytariladi.",
+      "Qaytariladigan foiz administrator tomonidan oldindan belgilanishi mumkin.",
+      "Siz har qanday holatda g'alaba qozonasiz — kiritgan pulingizga 10% qo'shib beriladi.",
+    ]},
+    { title: "💵 Hisobni to'ldirish va pul yechish", items: [
+      "Minimal hisobni to'ldirish — 10 000 so'm.",
+      "Minimal pul yechish — 10 000 so'm.",
+      "Hisobni to'ldirishda foydalanuvchi to'lov usuli va summani tanlaydi.",
+      "Tayyor so'rov avtomatik ravishda @" + SUPPORT_USERNAME + " administratoriga yuboriladi.",
+      "Pul yechish so'rovlari 48 soat ichida (dam olish kunlarisiz) ko'rib chiqiladi va to'lab berish kafolatlanadi.",
+      "Ayrim hollarda to'lov 48 soatdan ham kechikishi mumkin — bu qoidabuzarlik hisoblanmaydi.",
+      "Platforma daromadi reklama xizmatlaridan tushadi. Reklama to'lovlari kechikkan hollarda foydalanuvchilarga to'lovlar ham keyingi reklama to'lovi kelguncha kechikishi mumkin.",
+      "Kechikish yuz berganda foydalanuvchiga navbat raqami va taxminiy to'lov muddati ko'rsatiladi; to'lov shu muddat ichida navbat bo'yicha amalga oshiriladi.",
+      "Ayrim holatlarda (texnik ishlar, bank yoki to'lov tizimidagi nosozliklar, katta hajmdagi so'rovlar) to'lovlar kechikishi mumkin.",
+      "To'lov holatlari: 🟡 Kutilmoqda · 🔵 To'lanmoqda · 🟢 To'landi · 🔴 Rad etildi (sababi ko'rsatiladi).",
+    ]},
+    { title: "👥 Referal tizimi", items: [
+      "Har bir foydalanuvchi shaxsiy referal havolasiga ega.",
+      "Do'stlaringiz sizning havolangiz orqali ro'yxatdan o'tsa, referal sifatida hisoblanadi.",
+      "Referallar soni ilovaning Referallar bo'limida avtomatik ko'rsatiladi.",
+      "Soxta akkauntlar yoki qoidabuzarlik orqali referal yig'ish aniqlansa, referallar bekor qilinishi mumkin.",
+    ]},
+    { title: "🔒 Xavfsizlik", items: [
+      "Har bir amal serverda saqlanadi (chipta xaridi, to'lov, pul yechish, bonuslar va admin harakatlari).",
+      "Yozuvlar tizimda himoyalangan bo'lib, o'zgartirib yoki o'chirib bo'lmaydi.",
+      "Hisob faqat Telegram ID orqali egasiga tegishli bo'ladi.",
+      "Boshqa shaxslarga akkauntingizdan foydalanishga ruxsat bermang.",
+      "Shubhali faoliyat aniqlansa, administrator hisobni vaqtinchalik tekshiruv uchun cheklashi mumkin.",
+    ]},
+    { title: "🚫 Taqiqlangan holatlar", items: [
+      "Bir foydalanuvchi tomonidan bir nechta akkaunt ochish.",
+      "Tizimdagi xatolardan noqonuniy foydalanishga urinish.",
+      "Soxta to'lov cheklari yuborish.",
+      "Boshqa foydalanuvchilarning hisobiga ruxsatsiz kirishga urinish.",
+      "Platforma faoliyatiga zarar yetkazuvchi harakatlar.",
+      "Administratorga qo'pol muomala qilish, haqorat yoki bosim o'tkazishga urinish — bloklanishga sabab bo'ladi.",
+      "Jackpot o'yinida xatolik yoki qoidabuzarlik aniqlansa, yutuq bekor qilinadi va administrator hech qanday ogohlantirishsiz summani hisobdan ayirishi mumkin.",
+      "Botdan bloklangan taqdirda, kiritgan mablag'ingizni qaytarish uchun 24 soat ichida administratorga yozishingiz shart. Aks holda qoidalarga muvofiq mablag' qaytarilmaydi.",
+      "Bunday holatlarda administrator ogohlantirishsiz hisobni cheklash yoki bloklash huquqiga ega.",
+    ]},
+  ];
+  return (
+    <>
+      <TopBar title="Qoidalar" onBack={back} />
+      <div className="p-4 space-y-4">
+        <div className="w-full flex justify-center"><div className="text-5xl">🏆</div></div>
+        {sections.map((sec, si) => (
+          <div key={si} className="card-soft rounded-2xl p-4">
+            <div className="font-semibold text-sm text-primary mb-2">{sec.title}</div>
+            <ol className="space-y-2 text-sm">
+              {sec.items.map((t, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-primary font-semibold">{i + 1}.</span>
+                  <span className="text-foreground">{t}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+
+function FaqScreen({ back }: { back: () => void }) {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <>
+      <TopBar title="Yordam va qo'llab-quvvatlash" onBack={back} />
+      <div className="p-4 space-y-2">
+        {faqs.map((q, i) => (
+          <button key={i} onClick={() => setOpen(open === i ? null : i)}
+            className="card-soft rounded-xl w-full p-4 flex items-center justify-between text-left">
+            <span className="text-sm font-medium pr-3">{q}</span>
+            <ChevronRight className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${open === i ? "rotate-90" : ""}`} />
+          </button>
+        ))}
+        <div className="jackpot-card rounded-2xl p-4 mt-4 flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
+            <Send className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <div className="font-semibold text-sm">Biz bilan bog'lanish</div>
+            <div className="text-xs opacity-90">@NestPlay_Support</div>
+          </div>
+          <ChevronRight className="w-5 h-5" />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ReferralScreen({ back }: { back: () => void }) {
+  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
+  const link = useMemo(() => `https://t.me/NestPlayBot?start=${me.id}`, [me.id]);
+  const [stats, setStats] = useState<{ invited: number; verified: number; earned: number }>({ invited: 0, verified: 0, earned: 0 });
+  useEffect(() => {
+    let alive = true;
+    async function load() {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data } = await (supabase as any).rpc("get_my_referral_stats");
+      if (alive && data) setStats({ invited: Number(data.invited || 0), verified: Number(data.verified || 0), earned: Number(data.earned || 0) });
+    }
+    load();
+    const id = setInterval(load, 15000);
+    return () => { alive = false; clearInterval(id); };
+  }, [me.id]);
+  return (
+    <>
+      <TopBar title="Referal dasturi" onBack={back} />
+      <div className="p-4 space-y-3">
+        <div className="jackpot-card rounded-2xl p-5">
+          <div className="text-xs opacity-90 tracking-wider">DO'STLARINGIZNI TAKLIF QILING</div>
+          <div className="text-3xl font-extrabold mt-1">+500 so'm</div>
+          <div className="text-xs opacity-90 mt-1">har bir kanalga obuna bo'lgan do'st uchun</div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="card-soft rounded-2xl p-3 text-center">
+            <div className="text-[10px] text-muted-foreground tracking-wider">CHAQIRILDI</div>
+            <div className="text-xl font-extrabold mt-1">{stats.invited}</div>
+          </div>
+          <div className="card-soft rounded-2xl p-3 text-center">
+            <div className="text-[10px] text-muted-foreground tracking-wider">TASDIQLADI</div>
+            <div className="text-xl font-extrabold mt-1 text-success">{stats.verified}</div>
+          </div>
+          <div className="card-soft rounded-2xl p-3 text-center">
+            <div className="text-[10px] text-muted-foreground tracking-wider">ISHLADI</div>
+            <div className="text-xl font-extrabold mt-1 text-primary">{formatMoney(stats.earned)}</div>
+          </div>
+        </div>
+        <div className="card-soft rounded-2xl p-4">
+          <div className="text-xs text-muted-foreground">Sizning referal havolangiz</div>
+          <div className="mt-2 flex items-center gap-2">
+            <input readOnly value={link} className="flex-1 bg-muted rounded-lg px-3 h-10 text-xs" />
+            <button
+              onClick={() => navigator.clipboard?.writeText(link)}
+              className="h-10 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-semibold"
+            >
+              Nusxa
+            </button>
+          </div>
+        </div>
+        <div className="card-soft rounded-2xl p-4">
+          <div className="font-semibold text-sm mb-2">Qanday ishlaydi?</div>
+          <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal pl-4">
+            <li>Havolangizni do'stlaringizga yuboring.</li>
+            <li>Ular botga /start yuboradi va telefon raqamini yuboradi.</li>
+            <li>Rasmiy kanalga obuna bo'lib tasdiqlashadi.</li>
+            <li>Faqat shundan keyin sizga <b>+500 so'm</b> qo'shiladi.</li>
+          </ol>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function SegmentedTabs({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { key: string; label: string }[] }) {
+  return (
+    <div className="flex gap-2">
+      {options.map((o) => {
+        const active = value === o.key;
+        return (
+          <button key={o.key} onClick={() => onChange(o.key)}
+            className={`flex-1 h-10 rounded-xl text-sm font-semibold ${active ? "bg-primary text-primary-foreground shadow-button" : "bg-muted text-muted-foreground"}`}>
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
