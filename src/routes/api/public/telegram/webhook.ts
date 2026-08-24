@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { telegramWebhookSecret } from "@/lib/telegram-verify";
+import { LANGS, t, type Lang } from "@/lib/bot-i18n";
 
-const CHANNEL = "@NestPlayUz";
-const SUPPORT = "@NestPlay_Support";
-const BOT = "NestPlayBot";
+const CHANNEL = "@LumoWin";
+const SUPPORT = "@LumoWin";
+const APP_URL = "https://frontend-chat-bloom.lovable.app";
 
 async function tg(botToken: string, method: string, body: Record<string, unknown>) {
   const r = await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
@@ -65,137 +66,63 @@ async function getAdmin() {
   });
 }
 
-const RULES_PART_1 = `📜 <b>NestPlay — Rasmiy qoidalar va foydalanish shartlari</b>
+async function getLang(admin: any, tgId: number): Promise<Lang> {
+  const { data } = await admin.from("bot_users").select("lang").eq("telegram_id", tgId).maybeSingle();
+  return (data?.lang ?? "uz") as Lang;
+}
 
-🎯 <b>Yo'riqnoma</b>
-O'ynashni boshlash uchun avvalo <b>Hisobni to'ldirish</b> bo'limiga kirib, to'lov usuli va summani tanlang (minimal 10 000 so'm). «To'lov qilish» tugmasini bosganingizdan so'ng tayyor xabar avtomatik ravishda administratorga yuboriladi. To'lov tasdiqlangach, mablag' <b>O'yin balansiga</b> tushadi.
-
-So'ng o'ynamoqchi bo'lgan jackpotni tanlab «Chipta sotib olish» tugmasini bosing. Chipta narxi O'yin balansidan yechiladi. Belgilangan vaqt tugagach, tizim <b>avtomatik qura tashlaydi</b> va g'olib(lar)ni aniqlaydi. G'olib bo'lsangiz, yutuq summasi <b>Yechish balansiga</b> o'tkaziladi.
-
-Pul yechish uchun Yechish balansida kamida 10 000 so'm bo'lishi kerak. «Pul yechish» bo'limiga kirib, karta raqami va summani kiriting. Holat: <b>Kutilmoqda · To'lanmoqda · To'landi · Rad etildi</b>.
-
-🏆 <b>Umumiy qoidalar</b>
-• Har foydalanuvchi Telegram ID orqali aniqlanadi.
-• Har foydalanuvchi uchun alohida balans va o'yinlar tarixi yuritiladi.
-• Platformada <b>Haftalik</b> va <b>Kunlik</b> Jackpot o'yinlari mavjud.
-• Chipta narxi, yutuq fondi, o'yin muddati va g'oliblar soni admin tomonidan belgilanadi.
-
-💰 <b>Balans turlari</b>
-• 🎮 <b>O'yin balansi</b> — To'ldirishlar shu yerga tushadi, chiptalar faqat shundan xarid qilinadi.
-• 💳 <b>Yechish balansi</b> — Jackpot yutuqlari va bonuslar shu yerga tushadi. Pul yechish faqat shu balansdan.`;
-
-const RULES_PART_2 = `🎟 <b>Chipta va o'yin tartibi</b>
-• Chipta faqat O'yin balansi orqali xarid qilinadi.
-• Har chipta noyob tartib raqamiga ega bo'ladi.
-• Chipta savdosi admin belgilagan muddat davomida ochiq.
-• Vaqti tugagach tizim <b>avtomatik tasodifiy qura</b> tashlaydi.
-• Taymer server vaqti asosida ishlaydi.
-
-🏅 <b>G'oliblarni aniqlash</b>
-• G'oliblar soni admin tomonidan belgilanadi.
-• Har g'olib to'liq yutuq summasini Yechish balansiga oladi.
-• G'oliblar tasodifiy algoritm orqali aniqlanadi.
-
-🔄 <b>Mablag'ni qaytarish</b>
-• Yutmaganlarga chipta narxining <b>110%</b>i Yechish balansiga qaytariladi.
-• Siz har qanday holatda g'alaba qozonasiz — pulingizga 10% qo'shib beriladi.
-
-💵 <b>To'lovlar</b>
-• Minimal to'ldirish/yechish: <b>10 000 so'm</b>.
-• Pul yechish 48 soat ichida (dam olish kunlarisiz) ko'rib chiqiladi va to'lash kafolatlanadi.
-• Ayrim holatlarda (texnik ishlar, bank nosozliklari, katta hajmdagi so'rovlar) to'lovlar kechikishi mumkin.
-• To'lov <b>48 soatdan ham kechikishi</b> mumkin — bu qoidabuzarlik emas.
-• Daromadimiz reklamadan tushadi. Reklama to'lovi kechikkanda, sizga to'lov ham <b>keyingi reklama to'lovi kelguncha</b> kechikishi mumkin. Bunday holatda navbat raqami va taxminiy muddat ilovada ko'rsatiladi.
-
-👥 <b>Referal</b>
-• Har foydalanuvchi shaxsiy referal havolasiga ega.
-• Do'st sizning havolangiz orqali ro'yxatdan o'tib kanalga obuna bo'lsa, sizga <b>+500 so'm</b>.
-• Soxta akkauntlar aniqlansa, referallar bekor qilinadi.
-
-🔒 <b>Xavfsizlik</b>
-• Har amal serverda himoyalangan holda saqlanadi.
-• Hisob faqat Telegram ID orqali sizga tegishli.
-• Shubhali faoliyat cheklovga sabab bo'ladi.
-
-🚫 <b>Taqiqlangan</b>: ko'p akkaunt, soxta chek, boshqa hisobga kirish, tizimga zarar yetkazish.
-• Administratorga qo'pol muomala yoki haqorat uchun hisob bloklanadi.
-• Jackpot o'yinida xatolik aniqlansa, yutuq bekor qilinadi va admin ogohlantirishsiz summani ayirishi mumkin.
-• Bloklangan taqdirda kiritgan pulingizni qaytarish uchun <b>24 soat ichida</b> adminga yozishingiz shart, aks holda mablag' qaytarilmaydi.
-
-🆘 Aloqa: ${SUPPORT}`;
-
-async function mainMenu(botToken: string, admin: any, chatId: number, tgId: number, name: string) {
-  const appUrl = "https://telegram-mini-charm.lovable.app";
-  await sendClean(
-    botToken,
-    admin,
-    chatId,
-    tgId,
-    `🎰 <b>Xush kelibsiz, ${name}!</b> 🎉\n\n` +
-      `✨ <b>NestPlay</b> — Telegramdagi eng qiziqarli jackpot o'yini.\n` +
-      `💎 Chipta oling · 🏆 Jackpotda ishtirok eting · 💰 Yutib oling!\n\n` +
-      `🎯 Har hafta yuzlab foydalanuvchi pul yutmoqda.\n` +
-      `👇 Boshlash uchun quyidagi tugmalardan foydalaning:`,
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🎮 Ochish", web_app: { url: appUrl } }],
-          [
-            { text: "📢 Kanal", url: `https://t.me/${CHANNEL.replace(/^@/, "")}` },
-            { text: "🆘 Aloqa", url: `https://t.me/${SUPPORT.replace(/^@/, "")}` },
-          ],
-          [{ text: "📜 Qoidalar", callback_data: "rules" }],
+async function mainMenu(botToken: string, admin: any, chatId: number, tgId: number, name: string, lang?: Lang) {
+  const L = t(lang ?? (await getLang(admin, tgId)));
+  await sendClean(botToken, admin, chatId, tgId, L.welcome(name), {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: L.openBtn, web_app: { url: APP_URL } }],
+        [
+          { text: L.channelMenuBtn, url: `https://t.me/${CHANNEL.replace(/^@/, "")}` },
+          { text: L.supportBtn, callback_data: "noop" },
         ],
-      },
+        [{ text: L.langBtn, callback_data: "lang" }],
+      ],
     },
-  );
+  });
 }
 
-async function askPhone(botToken: string, admin: any, chatId: number, tgId: number) {
-  await sendClean(
-    botToken,
-    admin,
-    chatId,
-    tgId,
-    `📱 <b>Ro'yxatdan o'tish</b>\n\n` +
-      `Xush kelibsiz! 👋\n` +
-      `Davom etish uchun telefon raqamingizni yuboring.\n\n` +
-      `🔒 Ma'lumotlar xavfsiz saqlanadi.\n` +
-      `👇 <i>«Telefon raqamni yuborish» tugmasini bosing.</i>`,
-    {
-      reply_markup: {
-        keyboard: [[{ text: "📱 Telefon raqamni yuborish", request_contact: true }]],
-        resize_keyboard: true,
-        one_time_keyboard: true,
-      },
-    },
-  );
+async function langMenu(botToken: string, admin: any, chatId: number, tgId: number, lang: Lang) {
+  const L = t(lang);
+  const rows: { text: string; callback_data: string }[][] = [];
+  for (let i = 0; i < LANGS.length; i += 2) {
+    rows.push(
+      LANGS.slice(i, i + 2).map((l) => ({ text: l.label, callback_data: `setlang:${l.code}` })),
+    );
+  }
+  rows.push([{ text: L.backBtn, callback_data: "menu" }]);
+  await sendClean(botToken, admin, chatId, tgId, L.langTitle, { reply_markup: { inline_keyboard: rows } });
 }
 
-async function askChannel(botToken: string, admin: any, chatId: number, tgId: number) {
-  // Remove reply keyboard silently (this message is auto-cleaned next round)
+async function askPhone(botToken: string, admin: any, chatId: number, tgId: number, lang: Lang) {
+  const L = t(lang);
+  await sendClean(botToken, admin, chatId, tgId, L.askPhone, {
+    reply_markup: {
+      keyboard: [[{ text: L.phoneBtn, request_contact: true }]],
+      resize_keyboard: true,
+      one_time_keyboard: true,
+    },
+  });
+}
+
+async function askChannel(botToken: string, admin: any, chatId: number, tgId: number, lang: Lang) {
+  const L = t(lang);
   const rm = await sendMessage(botToken, chatId, "✅", { reply_markup: { remove_keyboard: true } });
   const rmId = rm?.result?.message_id;
   if (rmId) await deleteMsg(botToken, chatId, rmId);
-  await sendClean(
-    botToken,
-    admin,
-    chatId,
-    tgId,
-    `📢 <b>Rasmiy kanalga obuna bo'ling</b>\n\n` +
-      `✨ Botdan foydalanish uchun kanalimizga a'zo bo'lishingiz shart.\n\n` +
-      `👉 ${CHANNEL}\n\n` +
-      `📌 Yangiliklar, aksiyalar va g'oliblar shu yerda!\n\n` +
-      `Obuna bo'lgach 👇 «✅ Tasdiqlash» tugmasini bosing.`,
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "📢 Kanalga o'tish", url: `https://t.me/${CHANNEL.replace(/^@/, "")}` }],
-          [{ text: "✅ Tasdiqlash", callback_data: "verify_channel" }],
-        ],
-      },
+  await sendClean(botToken, admin, chatId, tgId, L.askChannel(CHANNEL), {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: L.channelBtn, url: `https://t.me/${CHANNEL.replace(/^@/, "")}` }],
+        [{ text: L.confirmBtn, callback_data: "verify_channel" }],
+      ],
     },
-  );
+  });
 }
 
 async function isSubscribed(botToken: string, userId: number): Promise<boolean> {
@@ -208,18 +135,8 @@ async function isSubscribed(botToken: string, userId: number): Promise<boolean> 
   }
 }
 
-const BLOCKED_TEXT =
-  "🚫 <b>Hisobingiz umrbod bloklandi</b>\n\n" +
-  "Siz qoidalarni qator ravishda buzganingiz uchun botdan foydalanish huquqingiz butunlay bekor qilindi.\n\n" +
-  "💵 Kiritgan pulingizni olishni istasangiz adminga yozing: " + SUPPORT + "\n" +
-  "⏳ 24 soat ichida yozmasangiz, qoidalarga muvofiq pulingiz qaytarilmaydi.";
-
 async function isBanned(admin: any, tgId: number): Promise<boolean> {
-  const { data } = await admin
-    .from("profiles")
-    .select("banned")
-    .eq("telegram_id", tgId)
-    .maybeSingle();
+  const { data } = await admin.from("profiles").select("banned").eq("telegram_id", tgId).maybeSingle();
   return !!data?.banned;
 }
 
@@ -246,10 +163,12 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
               return Response.json({ ok: true });
             }
             const admin = await getAdmin();
+            const lang = await getLang(admin, userId);
+            const L = t(lang);
             if (await isBanned(admin, userId)) {
               await tg(botToken, "answerCallbackQuery", {
                 callback_query_id: cb.id,
-                text: "🚫 Siz bloklangansiz",
+                text: L.bannedAlert,
                 show_alert: true,
               });
               return Response.json({ ok: true });
@@ -260,32 +179,36 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
               if (!ok) {
                 await tg(botToken, "answerCallbackQuery", {
                   callback_query_id: cb.id,
-                  text: "❌ Siz hali kanalga obuna bo'lmadingiz!",
+                  text: L.notSubscribed,
                   show_alert: true,
                 });
                 return Response.json({ ok: true });
               }
               await admin.rpc("bot_mark_channel_verified", { _telegram_id: userId });
-              await tg(botToken, "answerCallbackQuery", {
-                callback_query_id: cb.id,
-                text: "✅ Obuna tasdiqlandi! 🎉",
-              });
-              await mainMenu(botToken, admin, chatId, userId, cb.from?.first_name ?? "Do'st");
+              await tg(botToken, "answerCallbackQuery", { callback_query_id: cb.id, text: L.subscribed });
+              await mainMenu(botToken, admin, chatId, userId, cb.from?.first_name ?? "friend", lang);
               return Response.json({ ok: true });
             }
-            if (data === "rules") {
+            if (data === "lang") {
               await tg(botToken, "answerCallbackQuery", { callback_query_id: cb.id });
-              await sendClean(botToken, admin, chatId, userId, RULES_PART_1);
-              await sendClean(botToken, admin, chatId, userId, RULES_PART_2, {
-                reply_markup: {
-                  inline_keyboard: [[{ text: "⬅️ Bosh menyu", callback_data: "menu" }]],
-                },
-              });
+              await langMenu(botToken, admin, chatId, userId, lang);
+              return Response.json({ ok: true });
+            }
+            if (data.startsWith("setlang:")) {
+              const next = data.split(":")[1] as Lang;
+              const valid = LANGS.some((l) => l.code === next);
+              const chosen: Lang = valid ? next : "uz";
+              await admin
+                .from("bot_users")
+                .update({ lang: chosen, updated_at: new Date().toISOString() })
+                .eq("telegram_id", userId);
+              await tg(botToken, "answerCallbackQuery", { callback_query_id: cb.id, text: t(chosen).langChanged });
+              await mainMenu(botToken, admin, chatId, userId, cb.from?.first_name ?? "friend", chosen);
               return Response.json({ ok: true });
             }
             if (data === "menu") {
               await tg(botToken, "answerCallbackQuery", { callback_query_id: cb.id });
-              await mainMenu(botToken, admin, chatId, userId, cb.from?.first_name ?? "Do'st");
+              await mainMenu(botToken, admin, chatId, userId, cb.from?.first_name ?? "friend", lang);
               return Response.json({ ok: true });
             }
             await tg(botToken, "answerCallbackQuery", { callback_query_id: cb.id });
@@ -296,22 +219,22 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           const chatId: number | undefined = msg?.chat?.id;
           const text: string = msg?.text ?? "";
           const fromId: number | undefined = msg?.from?.id;
-          const firstName: string = msg?.from?.first_name ?? "Do'st";
+          const firstName: string = msg?.from?.first_name ?? "friend";
           const lastName: string | undefined = msg?.from?.last_name;
           const username: string | undefined = msg?.from?.username;
-          const incomingMsgId: number | undefined = msg?.message_id;
 
           if (!chatId || !fromId) return Response.json({ ok: true, ignored: true });
           const admin = await getAdmin();
           if (await isBanned(admin, fromId)) {
-            await sendMessage(botToken, chatId, BLOCKED_TEXT);
+            const L = t(await getLang(admin, fromId));
+            await sendMessage(botToken, chatId, L.blocked(SUPPORT));
             return Response.json({ ok: true, blocked: true });
           }
 
           if (msg?.contact?.phone_number) {
             const phone = msg.contact.phone_number as string;
             await admin.rpc("bot_set_phone", { _telegram_id: fromId, _phone: phone });
-            await askChannel(botToken, admin, chatId, fromId);
+            await askChannel(botToken, admin, chatId, fromId, await getLang(admin, fromId));
             return Response.json({ ok: true });
           }
 
@@ -330,43 +253,35 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
             });
             const { data: bu } = await admin
               .from("bot_users")
-              .select("phone, channel_verified")
+              .select("phone, channel_verified, lang")
               .eq("telegram_id", fromId)
               .maybeSingle();
+            const lang = (bu?.lang ?? "uz") as Lang;
 
             if (!bu?.phone) {
-              await askPhone(botToken, admin, chatId, fromId);
+              await askPhone(botToken, admin, chatId, fromId, lang);
             } else if (!bu.channel_verified) {
-              await askChannel(botToken, admin, chatId, fromId);
+              await askChannel(botToken, admin, chatId, fromId, lang);
             } else {
-              await mainMenu(botToken, admin, chatId, fromId, firstName);
+              await mainMenu(botToken, admin, chatId, fromId, firstName, lang);
             }
-            return Response.json({ ok: true });
-          }
-
-          if (text === "/qoidalar" || text.toLowerCase().startsWith("/rules")) {
-            await sendClean(botToken, admin, chatId, fromId, RULES_PART_1);
-            await sendClean(botToken, admin, chatId, fromId, RULES_PART_2, {
-              reply_markup: {
-                inline_keyboard: [[{ text: "⬅️ Bosh menyu", callback_data: "menu" }]],
-              },
-            });
             return Response.json({ ok: true });
           }
 
           const { data: bu } = await admin
             .from("bot_users")
-            .select("phone, channel_verified")
+            .select("phone, channel_verified, lang")
             .eq("telegram_id", fromId)
             .maybeSingle();
+          const lang = (bu?.lang ?? "uz") as Lang;
           if (!bu) {
-            await sendClean(botToken, admin, chatId, fromId, "👋 Iltimos /start buyrug'ini yuboring.");
+            await sendClean(botToken, admin, chatId, fromId, t(lang).startFirst);
           } else if (!bu.phone) {
-            await askPhone(botToken, admin, chatId, fromId);
+            await askPhone(botToken, admin, chatId, fromId, lang);
           } else if (!bu.channel_verified) {
-            await askChannel(botToken, admin, chatId, fromId);
+            await askChannel(botToken, admin, chatId, fromId, lang);
           } else {
-            await mainMenu(botToken, admin, chatId, fromId, firstName);
+            await mainMenu(botToken, admin, chatId, fromId, firstName, lang);
           }
           return Response.json({ ok: true });
         } catch (e) {
