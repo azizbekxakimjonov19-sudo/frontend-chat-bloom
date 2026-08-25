@@ -737,6 +737,47 @@ function HomeScreen({ go, openJackpot }: { go: (s: Screen) => void; openJackpot:
           onOpen={() => openJackpot(j.id)}
         />
       ))}
+      <div className="mx-4 mt-6 flex items-center justify-between">
+        <h2 className="text-base font-extrabold">Mashhur o'yinlar</h2>
+        <button onClick={() => go("games")} className="text-[11px] font-semibold text-primary">Barchasi ›</button>
+      </div>
+      <div className="mx-4 mt-2 grid grid-cols-2 gap-3">
+        {[
+          { key: "wheel" as Screen, img: bannerWheel, title: "Omad g'ildiragi", tag: "10–50%" },
+          { key: "cards" as Screen, img: bannerCards, title: "Karta ochish", tag: "15–50%" },
+        ].map((g) => (
+          <button key={g.key} onClick={() => go(g.key)} className="card-soft rounded-2xl overflow-hidden text-left active:scale-[0.98] transition-transform">
+            <img src={g.img} alt={g.title} loading="lazy" width={1152} height={576} className="w-full h-24 object-cover" />
+            <div className="p-2.5">
+              <div className="text-xs font-bold truncate">{g.title}</div>
+              <div className="text-[10px] font-semibold text-primary mt-0.5">{g.tag}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <button
+        onClick={() => go("referral")}
+        className="mx-4 mt-3 w-[calc(100%-2rem)] card-soft rounded-2xl overflow-hidden flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+      >
+        <img src={bannerReferral} alt="Referal" loading="lazy" width={1152} height={576} className="w-24 h-20 object-cover" />
+        <div className="flex-1 min-w-0 py-2 pr-3">
+          <div className="text-sm font-bold">Do'st taklif qiling</div>
+          <div className="text-[11px] text-muted-foreground">Har bir tasdiqlangan do'st uchun <b className="text-success">+450 so'm</b></div>
+        </div>
+      </button>
+
+      <button
+        onClick={() => go("earn")}
+        className="mx-4 mt-3 w-[calc(100%-2rem)] card-soft rounded-2xl overflow-hidden flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+      >
+        <img src={bannerAds} alt="Reklama" loading="lazy" width={1152} height={576} className="w-24 h-20 object-cover" />
+        <div className="flex-1 min-w-0 py-2 pr-3">
+          <div className="text-sm font-bold">Reklama ko'rib pul ishlash</div>
+          <div className="text-[11px] text-muted-foreground">Har 24 soatda 2 ta reklama · <b className="text-success">250 so'm</b></div>
+        </div>
+      </button>
+
       <div className="h-6" />
 
     </>
