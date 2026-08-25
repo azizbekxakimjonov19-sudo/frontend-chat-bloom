@@ -385,7 +385,7 @@ function EarnScreen() {
   }, []);
 
   const count = status?.count ?? 0;
-  const limit = status?.limit ?? 4;
+  const limit = status?.limit ?? 2;
   const reward = status?.amount ?? 250;
   const done = count >= limit;
   const msLeft = status?.nextResetAt ? Math.max(0, status.nextResetAt - Date.now()) : 0;
@@ -456,20 +456,20 @@ function EarnScreen() {
         <div className="jackpot-card rounded-2xl p-5 text-center relative overflow-hidden">
           <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/10" />
           <div className="text-[11px] tracking-widest opacity-90">REKLAMA KO'RISH</div>
-          <div className="text-3xl font-extrabold mt-1">+{formatMoney(totalReward)} <span className="text-base opacity-90">so'm / kun</span></div>
-          <div className="text-[11px] opacity-90 mt-1">{limit} ta reklama · har biri +{formatMoney(reward)} so'm</div>
+          <div className="text-3xl font-extrabold mt-1">+{formatMoney(totalReward)} <span className="text-base opacity-90">so'm / 24 soat</span></div>
+          <div className="text-[11px] opacity-90 mt-1">Har 24 soatda {limit} ta reklama · har biri +{formatMoney(reward)} so'm</div>
         </div>
 
         <div className="card-soft rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-semibold text-muted-foreground">BUGUNGI PROGRESS</div>
+            <div className="text-xs font-semibold text-muted-foreground">PROGRESS (24 SOAT)</div>
             <div className="text-sm font-bold tabular-nums">{count}/{limit}</div>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div className="h-full bg-primary transition-all" style={{ width: `${(count / limit) * 100}%` }} />
           </div>
           <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
-            <span>Bugungi topilgan: <b className="text-success">{formatMoney(count * reward)} so'm</b></span>
+            <span>Topilgan: <b className="text-success">{formatMoney(count * reward)} so'm</b></span>
             <span>Qoldi: {limit - count}</span>
           </div>
         </div>
@@ -494,15 +494,15 @@ function EarnScreen() {
               {formatTime(msLeft)}
             </div>
             <div className="text-[11px] text-muted-foreground mt-1">
-              Har kuni 02:00 (Toshkent) da yangilanadi
+              Oxirgi reklamadan 24 soat o'tgach ochiladi
             </div>
           </div>
         )}
 
         <div className="card-soft rounded-2xl p-3 text-[11px] text-muted-foreground leading-relaxed">
-          • Kuniga <b>{limit} ta</b> reklama ko'rish mumkin<br />
+          • Har 24 soatda <b>{limit} ta</b> reklama ko'rish mumkin<br />
           • Har biri uchun <b>{formatMoney(reward)} so'm</b> o'yin balansiga tushadi (jami <b>{formatMoney(totalReward)} so'm</b>)<br />
-          • Limit har kuni <b>02:00 (Toshkent)</b> da yangilanadi
+          • Limit oxirgi reklamadan <b>24 soat</b> o'tgach yangilanadi
         </div>
         </>)}
       </div>
@@ -737,6 +737,47 @@ function HomeScreen({ go, openJackpot }: { go: (s: Screen) => void; openJackpot:
           onOpen={() => openJackpot(j.id)}
         />
       ))}
+      <div className="mx-4 mt-6 flex items-center justify-between">
+        <h2 className="text-base font-extrabold">Mashhur o'yinlar</h2>
+        <button onClick={() => go("games")} className="text-[11px] font-semibold text-primary">Barchasi ›</button>
+      </div>
+      <div className="mx-4 mt-2 grid grid-cols-2 gap-3">
+        {[
+          { key: "wheel" as Screen, img: bannerWheel, title: "Omad g'ildiragi", tag: "10–50%" },
+          { key: "cards" as Screen, img: bannerCards, title: "Karta ochish", tag: "15–50%" },
+        ].map((g) => (
+          <button key={g.key} onClick={() => go(g.key)} className="card-soft rounded-2xl overflow-hidden text-left active:scale-[0.98] transition-transform">
+            <img src={g.img} alt={g.title} loading="lazy" width={1152} height={576} className="w-full h-24 object-cover" />
+            <div className="p-2.5">
+              <div className="text-xs font-bold truncate">{g.title}</div>
+              <div className="text-[10px] font-semibold text-primary mt-0.5">{g.tag}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <button
+        onClick={() => go("referral")}
+        className="mx-4 mt-3 w-[calc(100%-2rem)] card-soft rounded-2xl overflow-hidden flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+      >
+        <img src={bannerReferral} alt="Referal" loading="lazy" width={1152} height={576} className="w-24 h-20 object-cover" />
+        <div className="flex-1 min-w-0 py-2 pr-3">
+          <div className="text-sm font-bold">Do'st taklif qiling</div>
+          <div className="text-[11px] text-muted-foreground">Har bir tasdiqlangan do'st uchun <b className="text-success">+450 so'm</b></div>
+        </div>
+      </button>
+
+      <button
+        onClick={() => go("earn")}
+        className="mx-4 mt-3 w-[calc(100%-2rem)] card-soft rounded-2xl overflow-hidden flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+      >
+        <img src={bannerAds} alt="Reklama" loading="lazy" width={1152} height={576} className="w-24 h-20 object-cover" />
+        <div className="flex-1 min-w-0 py-2 pr-3">
+          <div className="text-sm font-bold">Reklama ko'rib pul ishlash</div>
+          <div className="text-[11px] text-muted-foreground">Har 24 soatda 2 ta reklama · <b className="text-success">250 so'm</b></div>
+        </div>
+      </button>
+
       <div className="h-6" />
 
     </>
@@ -945,35 +986,24 @@ function PayoutsScreen() {
 /* ---------- GAMES ---------- */
 const WHEEL_PRICE = 30000;
 const CARDS_PRICE = 20000;
-const WHEEL_SEGMENTS = [2, 4, 6, 8, 10, 12, 15, 18, 20, 22, 25, 30];
-const CARD_VALUES = [2, 4, 6, 8, 10, 12, 15, 18, 20];
+const WHEEL_SEGMENTS = [10, 12, 15, 18, 20, 25, 28, 30, 35, 40, 45, 50];
+const CARD_VALUES = [15, 18, 20, 25, 30, 35, 40, 45, 50];
 const WHEEL_COLORS = [
-  "#0e7490", "#f59e0b", "#0891b2", "#ef4444", "#14b8a6", "#8b5cf6",
-  "#0e7490", "#f59e0b", "#0891b2", "#ef4444", "#14b8a6", "#8b5cf6",
+  "#0e7490", "#f59e0b", "#0f766e", "#e11d48", "#0891b2", "#7c3aed",
+  "#155e75", "#d97706", "#14b8a6", "#be123c", "#06b6d4", "#6d28d9",
 ];
 
 function GamesScreen({ go }: { go: (s: Screen) => void }) {
-  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
   const games = [
-    { key: "wheel" as Screen, img: bannerWheel, title: "Omad g'ildiragi", sub: "2% dan 30% gacha yutuq", price: `${formatMoney(WHEEL_PRICE)} so'm` },
-    { key: "cards" as Screen, img: bannerCards, title: "Karta ochish", sub: "9 ta kartadan 1 tasini oching", price: `${formatMoney(CARDS_PRICE)} so'm` },
-    { key: "referral" as Screen, img: bannerReferral, title: "Referal orqali ishlash", sub: "Do'st taklif qiling va bonus oling", price: "Bepul" },
+    { key: "wheel" as Screen, img: bannerWheel, title: "Omad g'ildiragi", sub: "10% dan 50% gacha yutuq", price: `${formatMoney(WHEEL_PRICE)} so'm` },
+    { key: "cards" as Screen, img: bannerCards, title: "Karta ochish", sub: "9 ta kartadan 1 tasini oching · 15–50%", price: `${formatMoney(CARDS_PRICE)} so'm` },
+    { key: "referral" as Screen, img: bannerReferral, title: "Referal orqali ishlash", sub: "Har bir do'st uchun 450 so'm", price: "Bepul" },
+    { key: "earn" as Screen, img: bannerAds, title: "Reklama ko'rib pul ishlash", sub: "Har 24 soatda 2 ta reklama · 250 so'm", price: "Bepul" },
   ];
   return (
     <>
       <TopBar title="O'yinlar" />
       <div className="p-4 space-y-3">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="card-soft rounded-2xl p-3">
-            <div className="text-[10px] text-muted-foreground tracking-wider">O'YIN BALANSI</div>
-            <div className="text-lg font-extrabold mt-0.5">{formatMoney(me.balance)}</div>
-          </div>
-          <div className="card-soft rounded-2xl p-3 border-2 border-success/25">
-            <div className="text-[10px] text-muted-foreground tracking-wider">YECHISH BALANSI</div>
-            <div className="text-lg font-extrabold mt-0.5 text-success">{formatMoney(me.withdrawBalance)}</div>
-          </div>
-        </div>
-
         {games.map((g) => (
           <button
             key={g.key}
@@ -999,22 +1029,6 @@ function GamesScreen({ go }: { go: (s: Screen) => void }) {
   );
 }
 
-function GameBalances() {
-  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      <div className="card-soft rounded-2xl p-3">
-        <div className="text-[10px] text-muted-foreground tracking-wider">O'YIN BALANSI</div>
-        <div className="text-lg font-extrabold mt-0.5">{formatMoney(me.balance)}</div>
-      </div>
-      <div className="card-soft rounded-2xl p-3 border-2 border-success/25">
-        <div className="text-[10px] text-muted-foreground tracking-wider">YECHISH BALANSI</div>
-        <div className="text-lg font-extrabold mt-0.5 text-success">{formatMoney(me.withdrawBalance)}</div>
-      </div>
-    </div>
-  );
-}
-
 function WinModal({ percent, amount, onClose }: { percent: number; amount: number; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
@@ -1023,12 +1037,68 @@ function WinModal({ percent, amount, onClose }: { percent: number; amount: numbe
         <div className="mt-2 text-4xl font-extrabold text-primary">{percent}%</div>
         <div className="mt-2 text-sm font-semibold">Sizga {percent}% tushdi!</div>
         <div className="mt-1 text-lg font-extrabold text-success">+{formatMoney(amount)} so'm</div>
-        <div className="mt-1 text-[11px] text-muted-foreground">Yechish balansingizga o'tkazildi</div>
+        <div className="mt-1 text-[11px] text-muted-foreground">
+          Tikilgan pul va yutuq foizi bilan yechish balansingizga o'tkazildi
+        </div>
         <button onClick={onClose} className="mt-5 w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold shadow-button">
           Yopish
         </button>
       </div>
     </div>
+  );
+}
+
+function WheelFace() {
+  const n = WHEEL_SEGMENTS.length;
+  const seg = 360 / n;
+  const R = 100;
+  const polar = (deg: number, r: number) => {
+    const a = ((deg - 90) * Math.PI) / 180;
+    return [110 + r * Math.cos(a), 110 + r * Math.sin(a)];
+  };
+  return (
+    <svg viewBox="0 0 220 220" className="w-full h-full">
+      <defs>
+        <radialGradient id="hubG" cx="35%" cy="30%">
+          <stop offset="0%" stopColor="#fef3c7" />
+          <stop offset="100%" stopColor="#b45309" />
+        </radialGradient>
+        <radialGradient id="glossG" cx="35%" cy="25%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.35" />
+          <stop offset="60%" stopColor="#ffffff" stopOpacity="0.05" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0.28" />
+        </radialGradient>
+      </defs>
+      {WHEEL_SEGMENTS.map((v, i) => {
+        const a0 = i * seg;
+        const a1 = (i + 1) * seg;
+        const [x0, y0] = polar(a0, R);
+        const [x1, y1] = polar(a1, R);
+        const [tx, ty] = polar(a0 + seg / 2, R - 26);
+        return (
+          <g key={i}>
+            <path d={`M110 110 L ${x0} ${y0} A ${R} ${R} 0 0 1 ${x1} ${y1} Z`} fill={WHEEL_COLORS[i]} stroke="rgba(255,255,255,.35)" strokeWidth="1" />
+            <text
+              x={tx}
+              y={ty}
+              fill="#fff"
+              fontSize="15"
+              fontWeight="800"
+              textAnchor="middle"
+              dominantBaseline="central"
+              transform={`rotate(${a0 + seg / 2} ${tx} ${ty})`}
+              style={{ paintOrder: "stroke", stroke: "rgba(0,0,0,.35)", strokeWidth: 2 }}
+            >
+              {v}%
+            </text>
+            <circle {...(() => { const [dx, dy] = polar(a0, R - 6); return { cx: dx, cy: dy }; })()} r="2.6" fill="#fde68a" opacity="0.9" />
+          </g>
+        );
+      })}
+      <circle cx="110" cy="110" r={R} fill="url(#glossG)" />
+      <circle cx="110" cy="110" r="30" fill="url(#hubG)" stroke="#fef3c7" strokeWidth="2" />
+      <circle cx="102" cy="102" r="9" fill="rgba(255,255,255,.55)" />
+    </svg>
   );
 }
 
@@ -1043,7 +1113,6 @@ function WheelGameScreen({ back }: { back: () => void }) {
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   const seg = 360 / WHEEL_SEGMENTS.length;
-  const gradient = `conic-gradient(${WHEEL_SEGMENTS.map((_, i) => `${WHEEL_COLORS[i]} ${i * seg}deg ${(i + 1) * seg}deg`).join(", ")})`;
 
   const spin = async () => {
     if (spinning) return;
@@ -1056,7 +1125,7 @@ function WheelGameScreen({ back }: { back: () => void }) {
       setErr(res.error === "insufficient" ? "O'yin balansingiz yetarli emas" : res.error === "banned" ? "Hisobingiz bloklangan" : "Xatolik yuz berdi");
       return;
     }
-    const idx = Math.max(0, WHEEL_SEGMENTS.indexOf(res.percent ?? 2));
+    const idx = Math.max(0, WHEEL_SEGMENTS.indexOf(res.percent ?? WHEEL_SEGMENTS[0]));
     const target = 360 * 6 - (idx * seg + seg / 2);
     setAngle((a) => a + (target - (a % 360)) + 360 * 6);
     timer.current = setTimeout(() => {
@@ -1069,47 +1138,33 @@ function WheelGameScreen({ back }: { back: () => void }) {
     <>
       <TopBar title="Omad g'ildiragi" onBack={back} />
       <div className="p-4 space-y-4">
-        <GameBalances />
-
-        <div className="relative mx-auto w-[280px] h-[300px] flex items-start justify-center">
+        <div className="relative mx-auto w-[290px] h-[310px] flex items-start justify-center">
           <div
-            className="absolute top-1 z-20"
+            className="absolute top-0 z-20"
             style={{
               width: 0, height: 0,
-              borderLeft: "14px solid transparent",
-              borderRight: "14px solid transparent",
-              borderTop: "26px solid var(--gold)",
-              filter: "drop-shadow(0 3px 3px rgba(0,0,0,.4))",
+              borderLeft: "13px solid transparent",
+              borderRight: "13px solid transparent",
+              borderTop: "26px solid #fbbf24",
+              filter: "drop-shadow(0 3px 3px rgba(0,0,0,.45))",
             }}
           />
           <div
-            className="absolute top-6 w-[268px] h-[268px] rounded-full"
-            style={{ background: "linear-gradient(145deg,#fbbf24,#b45309)", boxShadow: "0 18px 30px -12px rgba(0,0,0,.55), inset 0 -6px 12px rgba(0,0,0,.25)" }}
-          />
-          <div
-            className="absolute top-[34px] w-[252px] h-[252px] rounded-full overflow-hidden"
+            className="absolute top-5 w-[286px] h-[286px] rounded-full"
             style={{
-              background: gradient,
+              background: "conic-gradient(from 0deg,#fde68a,#b45309,#fbbf24,#92400e,#fde68a)",
+              boxShadow: "0 22px 34px -14px rgba(0,0,0,.6), inset 0 -6px 14px rgba(0,0,0,.3)",
+            }}
+          />
+          <div
+            className="absolute top-[36px] w-[254px] h-[254px] rounded-full overflow-hidden"
+            style={{
               transform: `rotate(${angle}deg)`,
-              transition: spinning ? "transform 5s cubic-bezier(0.15, 0.9, 0.15, 1)" : "none",
-              boxShadow: "inset 0 0 40px rgba(0,0,0,.35)",
+              transition: spinning ? "transform 5s cubic-bezier(0.12, 0.85, 0.1, 1)" : "none",
+              filter: "drop-shadow(0 0 12px rgba(0,0,0,.35))",
             }}
           >
-            {WHEEL_SEGMENTS.map((v, i) => (
-              <div
-                key={i}
-                className="absolute left-1/2 top-1/2 origin-top text-white font-extrabold text-[13px]"
-                style={{ transform: `rotate(${i * seg + seg / 2}deg) translateY(-112px)`, textShadow: "0 2px 3px rgba(0,0,0,.5)" }}
-              >
-                <span className="block -translate-x-1/2">{v}%</span>
-              </div>
-            ))}
-          </div>
-          <div
-            className="absolute top-[145px] w-[62px] h-[62px] rounded-full z-10 flex items-center justify-center"
-            style={{ background: "radial-gradient(circle at 35% 30%, #fde68a, #d97706)", boxShadow: "0 6px 14px rgba(0,0,0,.4)" }}
-          >
-            <div style={{ width: 22, height: 22, borderRadius: 999, background: "rgba(255,255,255,.7)" }} />
+            <WheelFace />
           </div>
         </div>
 
@@ -1125,8 +1180,8 @@ function WheelGameScreen({ back }: { back: () => void }) {
 
         <div className="card-soft rounded-2xl p-3 text-[11px] text-muted-foreground space-y-1">
           <div>• Har bir aylantirish <b className="text-foreground">{formatMoney(WHEEL_PRICE)} so'm</b> — o'yin balansidan yechiladi.</div>
-          <div>• Strelka to'xtagan foiz sizning o'yin balansingizga nisbatan hisoblanadi.</div>
-          <div>• Yutuq <b className="text-success">Yechish balansiga</b> o'tadi.</div>
+          <div>• Foiz <b className="text-foreground">10% – 50%</b> oralig'ida bo'ladi.</div>
+          <div>• <b className="text-success">Tikilgan pul + foiz</b> yechish balansiga o'tadi (misol: 30 000 → 10% = 33 000).</div>
         </div>
       </div>
       {win && <WinModal percent={win.percent} amount={win.amount} onClose={() => setWin(null)} />}
@@ -1156,11 +1211,11 @@ function CardsGameScreen({ back }: { back: () => void }) {
       setErr(res.error === "insufficient" ? "O'yin balansingiz yetarli emas" : res.error === "banned" ? "Hisobingiz bloklangan" : "Xatolik yuz berdi");
       return;
     }
-    const pct = res.percent ?? 2;
+    const pct = res.percent ?? CARD_VALUES[0];
     const rest = CARD_VALUES.filter((v) => v !== pct).sort(() => Math.random() - 0.5);
     const map: Record<number, number> = {};
     let k = 0;
-    for (let j = 0; j < 9; j++) map[j] = j === i ? pct : (rest[k++] ?? 2);
+    for (let j = 0; j < 9; j++) map[j] = j === i ? pct : (rest[k++] ?? CARD_VALUES[0]);
     setTimeout(() => {
       setRevealed(map);
       setBusy(false);
@@ -1171,14 +1226,12 @@ function CardsGameScreen({ back }: { back: () => void }) {
   return (
     <>
       <TopBar title="Karta ochish" onBack={back} />
-      <div className="p-4 space-y-4">
-        <GameBalances />
-
+      <div className="p-4 space-y-3">
         <div className="text-center text-sm font-semibold">
           {picked === null ? "9 ta kartadan bittasini tanlang" : "Kartangiz ochildi!"}
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 mx-auto w-[250px]">
           {Array.from({ length: 9 }).map((_, i) => {
             const isOpen = revealed[i] !== undefined;
             const isPicked = picked === i;
@@ -1187,35 +1240,35 @@ function CardsGameScreen({ back }: { back: () => void }) {
                 key={i}
                 onClick={() => pick(i)}
                 disabled={picked !== null}
-                className="relative aspect-[3/4] rounded-2xl"
-                style={{ perspective: "700px" }}
+                className="relative aspect-[3/4] rounded-xl"
+                style={{ perspective: "600px" }}
               >
                 <div
-                  className="absolute inset-0 rounded-2xl transition-transform duration-500"
+                  className="absolute inset-0 rounded-xl transition-transform duration-500"
                   style={{ transformStyle: "preserve-3d", transform: isPicked || isOpen ? "rotateY(180deg)" : "none" }}
                 >
                   <div
-                    className="absolute inset-0 rounded-2xl flex items-center justify-center text-2xl"
+                    className="absolute inset-0 rounded-xl flex items-center justify-center text-lg"
                     style={{
                       backfaceVisibility: "hidden",
                       background: "linear-gradient(145deg, var(--primary), var(--primary-dark))",
-                      boxShadow: "0 8px 18px -8px rgba(0,0,0,.5)",
-                      border: "2px solid var(--gold)",
+                      boxShadow: "0 6px 14px -8px rgba(0,0,0,.55)",
+                      border: "2px solid #fbbf24",
                     }}
                   >
-                    ❔
+                    🂠
                   </div>
                   <div
-                    className={`absolute inset-0 rounded-2xl flex flex-col items-center justify-center ${isPicked ? "ring-4 ring-[var(--gold)]" : ""}`}
+                    className={`absolute inset-0 rounded-xl flex items-center justify-center ${isPicked ? "ring-[3px] ring-[#fbbf24]" : ""}`}
                     style={{
                       backfaceVisibility: "hidden",
                       transform: "rotateY(180deg)",
                       background: isPicked ? "linear-gradient(145deg,#fbbf24,#d97706)" : "var(--muted)",
                       color: isPicked ? "#3b2405" : "var(--muted-foreground)",
-                      boxShadow: "0 8px 18px -8px rgba(0,0,0,.5)",
+                      boxShadow: "0 6px 14px -8px rgba(0,0,0,.5)",
                     }}
                   >
-                    <span className="text-xl font-extrabold">{revealed[i] ?? "…"}%</span>
+                    <span className="text-base font-extrabold">{revealed[i] ?? "…"}%</span>
                   </div>
                 </div>
               </button>
@@ -1226,19 +1279,19 @@ function CardsGameScreen({ back }: { back: () => void }) {
         {err && <div className="rounded-xl bg-destructive/10 border border-destructive/40 px-3 py-2 text-xs text-destructive text-center">{err}</div>}
 
         {picked !== null && !busy ? (
-          <button onClick={reset} className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-extrabold shadow-button active:scale-[0.98] transition-transform">
+          <button onClick={reset} className="w-full h-11 rounded-2xl bg-primary text-primary-foreground font-extrabold shadow-button active:scale-[0.98] transition-transform text-sm">
             Yana o'ynash · {formatMoney(CARDS_PRICE)} so'm
           </button>
         ) : (
-          <div className="w-full h-12 rounded-2xl bg-muted text-muted-foreground font-semibold flex items-center justify-center text-sm">
+          <div className="w-full h-11 rounded-2xl bg-muted text-muted-foreground font-semibold flex items-center justify-center text-xs">
             1 ta o'yin narxi · {formatMoney(CARDS_PRICE)} so'm
           </div>
         )}
 
         <div className="card-soft rounded-2xl p-3 text-[11px] text-muted-foreground space-y-1">
           <div>• Faqat <b className="text-foreground">1 ta</b> karta tanlanadi.</div>
-          <div>• Kartadagi foiz o'yin balansingizga nisbatan hisoblanadi.</div>
-          <div>• Yutuq <b className="text-success">Yechish balansiga</b> o'tadi.</div>
+          <div>• Foiz <b className="text-foreground">15% – 50%</b> oralig'ida.</div>
+          <div>• <b className="text-success">Tikilgan pul + foiz</b> yechish balansiga o'tadi (misol: 20 000 → 20% = 24 000).</div>
         </div>
       </div>
       {win && <WinModal percent={win.percent} amount={win.amount} onClose={() => setWin(null)} />}
@@ -1378,8 +1431,6 @@ function PaymentScreen({ go }: { go: (s: Screen) => void }) {
 function ProfileScreen({ go }: { go: (s: Screen) => void }) {
   const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
   const items: { key: Screen; label: string; icon: any }[] = [
-    { key: "deposit", label: "Pul kiritish", icon: ArrowDownToLine },
-    { key: "withdraw", label: "Pul yechish", icon: ArrowUpFromLine },
     { key: "history", label: "Tranzaksiyalar", icon: Wallet },
     { key: "rules", label: "Qoidalar", icon: Shield },
 
@@ -1412,7 +1463,7 @@ function ProfileScreen({ go }: { go: (s: Screen) => void }) {
 
         <div className="grid grid-cols-3 gap-2 mt-3">
           {[
-            { label: "Jami chipta", value: `${me.tickets.length}` },
+            { label: "Jami o'yinlar", value: `${me.tickets.length}` },
             { label: "Yutuqlar", value: `${me.tickets.filter(t=>t.status==="won").length}` },
             { label: "Status", value: me.banned ? "Bloklangan" : "Faol" },
           ].map((s, i) => (
@@ -1459,7 +1510,7 @@ function ProfileScreen({ go }: { go: (s: Screen) => void }) {
             className="w-full flex items-center gap-3 p-3.5 active:bg-muted"
           >
             <HelpCircle className="w-5 h-5 text-muted-foreground" />
-            <div className="flex-1 text-left text-sm font-medium">Yordam va qo'llab-quvvatlash</div>
+            <div className="flex-1 text-left text-sm font-medium">Yordam va qo'llab-quvvatlash (@LumoWinUz)</div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
@@ -1470,7 +1521,8 @@ function ProfileScreen({ go }: { go: (s: Screen) => void }) {
 
 /* ---------- Deposit / Withdraw ---------- */
 const MIN_AMOUNT = 10000;
-const SUPPORT_USERNAME = "LumoWin";
+const MIN_WITHDRAW = 20000;
+const SUPPORT_USERNAME = "LumoWinUz";
 
 function DepositScreen({ back }: { back: () => void }) {
   const [amount, setAmount] = useState("100 000");
@@ -1554,7 +1606,7 @@ function WithdrawScreen({ back }: { back: () => void }) {
   const submit = async () => {
     if (sending) return;
     const n = parseInt(amount.replace(/\D/g, ""), 10);
-    if (!n || n < MIN_AMOUNT) { setMsg({ ok: false, text: `Minimal yechish: ${formatMoney(MIN_AMOUNT)} so'm` }); setTimeout(() => setMsg(null), 3000); return; }
+    if (!n || n < MIN_WITHDRAW) { setMsg({ ok: false, text: `Minimal yechish: ${formatMoney(MIN_WITHDRAW)} so'm` }); setTimeout(() => setMsg(null), 3000); return; }
     if (n > me.withdrawBalance) { setMsg({ ok: false, text: "Yechish balansi yetarli emas" }); setTimeout(() => setMsg(null), 3000); return; }
     const cardDigits = details.replace(/\D/g, "");
     if (cardDigits.length !== 16) { setMsg({ ok: false, text: "Karta raqami 16 xonali bo'lishi kerak" }); setTimeout(() => setMsg(null), 3000); return; }
@@ -1604,7 +1656,7 @@ function WithdrawScreen({ back }: { back: () => void }) {
           <span className="text-muted-foreground text-sm">so'm</span>
         </div>
         <ul className="mt-3 text-xs text-muted-foreground space-y-1">
-          <li>› Minimal yechish: <b>{formatMoney(MIN_AMOUNT)} so'm</b></li>
+          <li>› Minimal yechish: <b>{formatMoney(MIN_WITHDRAW)} so'm</b></li>
           <li>› 25 soat ichida amalga oshiriladi</li>
         </ul>
         <button onClick={submit} disabled={sending}

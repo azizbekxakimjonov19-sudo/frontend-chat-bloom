@@ -79,7 +79,7 @@ async function mainMenu(botToken: string, admin: any, chatId: number, tgId: numb
         [{ text: L.openBtn, web_app: { url: APP_URL } }],
         [
           { text: L.channelMenuBtn, url: `https://t.me/${CHANNEL.replace(/^@/, "")}` },
-          { text: L.supportBtn, callback_data: "noop" },
+          { text: L.supportBtn, url: "https://t.me/LumoWinUz" },
         ],
         [{ text: L.langBtn, callback_data: "lang" }],
       ],
