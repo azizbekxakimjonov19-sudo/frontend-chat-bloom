@@ -385,7 +385,7 @@ function EarnScreen() {
   }, []);
 
   const count = status?.count ?? 0;
-  const limit = status?.limit ?? 4;
+  const limit = status?.limit ?? 2;
   const reward = status?.amount ?? 250;
   const done = count >= limit;
   const msLeft = status?.nextResetAt ? Math.max(0, status.nextResetAt - Date.now()) : 0;
@@ -456,20 +456,20 @@ function EarnScreen() {
         <div className="jackpot-card rounded-2xl p-5 text-center relative overflow-hidden">
           <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/10" />
           <div className="text-[11px] tracking-widest opacity-90">REKLAMA KO'RISH</div>
-          <div className="text-3xl font-extrabold mt-1">+{formatMoney(totalReward)} <span className="text-base opacity-90">so'm / kun</span></div>
-          <div className="text-[11px] opacity-90 mt-1">{limit} ta reklama · har biri +{formatMoney(reward)} so'm</div>
+          <div className="text-3xl font-extrabold mt-1">+{formatMoney(totalReward)} <span className="text-base opacity-90">so'm / 24 soat</span></div>
+          <div className="text-[11px] opacity-90 mt-1">Har 24 soatda {limit} ta reklama · har biri +{formatMoney(reward)} so'm</div>
         </div>
 
         <div className="card-soft rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-semibold text-muted-foreground">BUGUNGI PROGRESS</div>
+            <div className="text-xs font-semibold text-muted-foreground">PROGRESS (24 SOAT)</div>
             <div className="text-sm font-bold tabular-nums">{count}/{limit}</div>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div className="h-full bg-primary transition-all" style={{ width: `${(count / limit) * 100}%` }} />
           </div>
           <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
-            <span>Bugungi topilgan: <b className="text-success">{formatMoney(count * reward)} so'm</b></span>
+            <span>Topilgan: <b className="text-success">{formatMoney(count * reward)} so'm</b></span>
             <span>Qoldi: {limit - count}</span>
           </div>
         </div>
@@ -494,15 +494,15 @@ function EarnScreen() {
               {formatTime(msLeft)}
             </div>
             <div className="text-[11px] text-muted-foreground mt-1">
-              Har kuni 02:00 (Toshkent) da yangilanadi
+              Oxirgi reklamadan 24 soat o'tgach ochiladi
             </div>
           </div>
         )}
 
         <div className="card-soft rounded-2xl p-3 text-[11px] text-muted-foreground leading-relaxed">
-          • Kuniga <b>{limit} ta</b> reklama ko'rish mumkin<br />
+          • Har 24 soatda <b>{limit} ta</b> reklama ko'rish mumkin<br />
           • Har biri uchun <b>{formatMoney(reward)} so'm</b> o'yin balansiga tushadi (jami <b>{formatMoney(totalReward)} so'm</b>)<br />
-          • Limit har kuni <b>02:00 (Toshkent)</b> da yangilanadi
+          • Limit oxirgi reklamadan <b>24 soat</b> o'tgach yangilanadi
         </div>
         </>)}
       </div>
