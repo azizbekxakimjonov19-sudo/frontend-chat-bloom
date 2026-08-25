@@ -1390,8 +1390,6 @@ function PaymentScreen({ go }: { go: (s: Screen) => void }) {
 function ProfileScreen({ go }: { go: (s: Screen) => void }) {
   const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
   const items: { key: Screen; label: string; icon: any }[] = [
-    { key: "deposit", label: "Pul kiritish", icon: ArrowDownToLine },
-    { key: "withdraw", label: "Pul yechish", icon: ArrowUpFromLine },
     { key: "history", label: "Tranzaksiyalar", icon: Wallet },
     { key: "rules", label: "Qoidalar", icon: Shield },
 
@@ -1424,7 +1422,7 @@ function ProfileScreen({ go }: { go: (s: Screen) => void }) {
 
         <div className="grid grid-cols-3 gap-2 mt-3">
           {[
-            { label: "Jami chipta", value: `${me.tickets.length}` },
+            { label: "Jami o'yinlar", value: `${me.tickets.length}` },
             { label: "Yutuqlar", value: `${me.tickets.filter(t=>t.status==="won").length}` },
             { label: "Status", value: me.banned ? "Bloklangan" : "Faol" },
           ].map((s, i) => (
@@ -1471,7 +1469,7 @@ function ProfileScreen({ go }: { go: (s: Screen) => void }) {
             className="w-full flex items-center gap-3 p-3.5 active:bg-muted"
           >
             <HelpCircle className="w-5 h-5 text-muted-foreground" />
-            <div className="flex-1 text-left text-sm font-medium">Yordam va qo'llab-quvvatlash</div>
+            <div className="flex-1 text-left text-sm font-medium">Yordam va qo'llab-quvvatlash (@LumoWinUz)</div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
@@ -1482,7 +1480,8 @@ function ProfileScreen({ go }: { go: (s: Screen) => void }) {
 
 /* ---------- Deposit / Withdraw ---------- */
 const MIN_AMOUNT = 10000;
-const SUPPORT_USERNAME = "LumoWin";
+const MIN_WITHDRAW = 20000;
+const SUPPORT_USERNAME = "LumoWinUz";
 
 function DepositScreen({ back }: { back: () => void }) {
   const [amount, setAmount] = useState("100 000");
@@ -1566,7 +1565,7 @@ function WithdrawScreen({ back }: { back: () => void }) {
   const submit = async () => {
     if (sending) return;
     const n = parseInt(amount.replace(/\D/g, ""), 10);
-    if (!n || n < MIN_AMOUNT) { setMsg({ ok: false, text: `Minimal yechish: ${formatMoney(MIN_AMOUNT)} so'm` }); setTimeout(() => setMsg(null), 3000); return; }
+    if (!n || n < MIN_WITHDRAW) { setMsg({ ok: false, text: `Minimal yechish: ${formatMoney(MIN_WITHDRAW)} so'm` }); setTimeout(() => setMsg(null), 3000); return; }
     if (n > me.withdrawBalance) { setMsg({ ok: false, text: "Yechish balansi yetarli emas" }); setTimeout(() => setMsg(null), 3000); return; }
     const cardDigits = details.replace(/\D/g, "");
     if (cardDigits.length !== 16) { setMsg({ ok: false, text: "Karta raqami 16 xonali bo'lishi kerak" }); setTimeout(() => setMsg(null), 3000); return; }
@@ -1616,7 +1615,7 @@ function WithdrawScreen({ back }: { back: () => void }) {
           <span className="text-muted-foreground text-sm">so'm</span>
         </div>
         <ul className="mt-3 text-xs text-muted-foreground space-y-1">
-          <li>› Minimal yechish: <b>{formatMoney(MIN_AMOUNT)} so'm</b></li>
+          <li>› Minimal yechish: <b>{formatMoney(MIN_WITHDRAW)} so'm</b></li>
           <li>› 25 soat ichida amalga oshiriladi</li>
         </ul>
         <button onClick={submit} disabled={sending}
