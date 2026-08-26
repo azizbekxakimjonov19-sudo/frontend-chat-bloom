@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -170,6 +170,36 @@ export type Database = {
           telegram_id?: number
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      conversions: {
+        Row: {
+          amount: number
+          created_at: string
+          done_at: string | null
+          execute_at: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          done_at?: string | null
+          execute_at: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          done_at?: string | null
+          execute_at?: string
+          id?: string
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -772,6 +802,7 @@ export type Database = {
       }
       cron_auto_draw: { Args: never; Returns: Json }
       cron_cleanup_inactive: { Args: never; Returns: Json }
+      cron_tick: { Args: never; Returns: undefined }
       draw_jackpot: { Args: { _id: string }; Returns: Json }
       enqueue_bot_notification: {
         Args: { _telegram_id: number; _text: string }
@@ -779,6 +810,7 @@ export type Database = {
       }
       get_ad_status: { Args: never; Returns: Json }
       get_bonus_status: { Args: never; Returns: Json }
+      get_conversion_status: { Args: never; Returns: Json }
       get_my_referral_stats: { Args: never; Returns: Json }
       get_recent_withdrawals: {
         Args: { _limit?: number }
@@ -823,6 +855,8 @@ export type Database = {
       is_account_deleted: { Args: { _telegram_id: number }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       play_minigame: { Args: { _game: string }; Returns: Json }
+      process_conversions: { Args: never; Returns: number }
+      request_conversion: { Args: never; Returns: Json }
       request_deposit: {
         Args: { _amount: number; _details: string; _method: string }
         Returns: Json
