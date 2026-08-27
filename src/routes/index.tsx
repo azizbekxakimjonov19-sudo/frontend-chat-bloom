@@ -28,10 +28,11 @@ export const Route = createFileRoute("/")({
 });
 
 type Screen =
-  | "home" | "games" | "bonus" | "earn" | "payment" | "payouts" | "profile"
-  | "deposit" | "withdraw" | "history" | "rules" | "faq" | "referral"
+  | "home" | "games" | "bonus" | "ads" | "payment" | "payouts" | "profile"
+  | "deposit" | "withdraw" | "convert" | "history" | "rules" | "faq" | "referral"
   | "wheel" | "cards"
-  | "jackpot" | "admin";
+  | "admin";
+
 
 
 const faqs = [
