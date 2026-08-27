@@ -420,7 +420,7 @@ function AdsScreen({ back }: { back: () => void }) {
   if (!earnEnabled) {
     return (
       <>
-        <TopBar title="Pul ishlash" />
+        <TopBar title="Reklama ko'rib pul ishlash" onBack={back} />
         <div className="p-4">
           <div className="card-soft rounded-2xl p-6 text-center text-sm text-muted-foreground">
             Bu bo'lim vaqtincha o'chirilgan.
@@ -434,21 +434,10 @@ function AdsScreen({ back }: { back: () => void }) {
 
   return (
     <>
-      <TopBar title="Pul ishlash" />
+      <TopBar title="Reklama ko'rib pul ishlash" onBack={back} />
       <div className="p-4 space-y-3">
-        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-muted">
-          <button
-            onClick={() => setTab("ads")}
-            className={`h-9 rounded-lg text-xs font-semibold ${tab === "ads" ? "bg-background shadow-sm text-primary" : "text-muted-foreground"}`}
-          >Reklama ko'rish</button>
-          <button
-            onClick={() => setTab("invest")}
-            className={`h-9 rounded-lg text-xs font-semibold ${tab === "invest" ? "bg-background shadow-sm text-primary" : "text-muted-foreground"}`}
-          >Pul ko'paytirish</button>
-        </div>
-
-        {tab === "invest" ? <InvestPanel /> : (
         <>
+
         <div className="jackpot-card rounded-2xl p-5 text-center relative overflow-hidden">
           <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/10" />
           <div className="text-[11px] tracking-widest opacity-90">REKLAMA KO'RISH</div>
