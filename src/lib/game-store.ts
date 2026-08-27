@@ -695,6 +695,25 @@ export async function requestWithdraw(amount: number, method: string, details = 
   return data as any;
 }
 
+export type ConversionStatus = { pending: boolean; amount?: number; executeAt?: number };
+export async function getConversionStatus(): Promise<ConversionStatus> {
+  const { data, error } = await (supabase as any).rpc("get_conversion_status");
+  if (error || !data?.ok) return { pending: false };
+  return {
+    pending: !!data.pending,
+    amount: data.amount ? Number(data.amount) : undefined,
+    executeAt: data.execute_at ? new Date(data.execute_at).getTime() : undefined,
+  };
+}
+export async function requestConversion(): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await (supabase as any).rpc("request_conversion");
+  if (error) return { ok: false, error: error.message };
+  await loadMyDetails();
+  return data as any;
+}
+
+
+
 export function drawWinner(jackpotId: JackpotId, _onComplete?: (winner: Participant) => void) {
   // Fire-and-forget: server executes atomically and realtime pushes new state.
   supabase.rpc("draw_jackpot", { _id: jackpotId }).then(({ error }) => {

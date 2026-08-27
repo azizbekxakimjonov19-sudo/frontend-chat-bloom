@@ -28,10 +28,11 @@ export const Route = createFileRoute("/")({
 });
 
 type Screen =
-  | "home" | "games" | "bonus" | "earn" | "payment" | "payouts" | "profile"
-  | "deposit" | "withdraw" | "history" | "rules" | "faq" | "referral"
+  | "home" | "games" | "bonus" | "ads" | "payment" | "payouts" | "profile"
+  | "deposit" | "withdraw" | "convert" | "history" | "rules" | "faq" | "referral"
   | "wheel" | "cards"
-  | "jackpot" | "admin";
+  | "admin";
+
 
 
 const faqs = [
@@ -56,8 +57,7 @@ function useNow(ms = 1000) {
 /* ---------- App ---------- */
 function LumoWinApp() {
   const [screen, setScreen] = useState<Screen>("home");
-  const [activeJp, setActiveJp] = useState<string | null>(null);
-  const jackpots = useGame((s) => s.jackpots);
+
   const authError = useGame((s) => s.authError);
   const ready = useGame((s) => s.ready);
 
@@ -85,9 +85,9 @@ function LumoWinApp() {
     return () => { alive = false; clearInterval(id); };
   }, [ready]);
 
-  const isTab = (["home", "games", "bonus", "earn", "payment", "payouts", "profile"] as Screen[]).includes(screen);
+  const isTab = (["home", "games", "bonus", "payment", "payouts", "profile"] as Screen[]).includes(screen);
 
-  const openJackpot = (id: string) => { setActiveJp(id); setScreen("jackpot"); };
+  if (!ready) return <div className="min-h-screen bg-background" />;
 
   return (
     <div className="min-h-screen bg-background flex justify-center">
@@ -97,28 +97,26 @@ function LumoWinApp() {
             Auth: {authError}
           </div>
         )}
-        {screen === "home" && <HomeScreen go={setScreen} openJackpot={openJackpot} />}
+        {screen === "home" && <HomeScreen go={setScreen} />}
         {screen === "games" && <GamesScreen go={setScreen} />}
         {screen === "wheel" && <WheelGameScreen back={() => setScreen("games")} />}
         {screen === "cards" && <CardsGameScreen back={() => setScreen("games")} />}
         {screen === "bonus" && <BonusScreen />}
-        {screen === "earn" && <EarnScreen />}
+        {screen === "ads" && <AdsScreen back={() => setScreen("games")} />}
         {screen === "payment" && <PaymentScreen go={setScreen} />}
         {screen === "payouts" && <PayoutsScreen />}
         {screen === "profile" && <ProfileScreen go={setScreen} />}
         {screen === "deposit" && <DepositScreen back={() => setScreen("payment")} />}
         {screen === "withdraw" && <WithdrawScreen back={() => setScreen("payment")} />}
+        {screen === "convert" && <ConvertScreen back={() => setScreen("payment")} />}
         {screen === "history" && <HistoryScreen back={() => setScreen("profile")} />}
         {screen === "rules" && <RulesScreen back={() => setScreen("profile")} />}
         {screen === "faq" && <FaqScreen back={() => setScreen("profile")} />}
         {screen === "referral" && <ReferralScreen back={() => setScreen("games")} />}
-
-        {screen === "jackpot" && activeJp && jackpots[activeJp] && (
-          <JackpotDetailScreen jackpotId={activeJp} back={() => setScreen("home")} />
-        )}
         {screen === "admin" && <AdminPanel back={() => setScreen("profile")} />}
 
         {isTab && <BottomNav current={screen} go={setScreen} />}
+
       </div>
     </div>
   );
@@ -142,19 +140,17 @@ function TopBar({ title, onBack, right }: { title: string; onBack?: () => void; 
 }
 
 function BottomNav({ current, go }: { current: Screen; go: (s: Screen) => void }) {
-  const earnEnabled = useGame((s) => s.earnEnabled);
   const bonusEnabled = useGame((s) => s.bonusEnabled);
   const all: { key: Screen; label: string; icon: any }[] = [
     { key: "home", label: "Bosh sahifa", icon: Home },
     { key: "games", label: "O'yinlar", icon: Gamepad2 },
     { key: "bonus", label: "Bonus", icon: Sparkles },
-    { key: "earn", label: "Pul ishlash", icon: Gift },
     { key: "payment", label: "To'lov", icon: CreditCard },
     { key: "payouts", label: "To'langan", icon: HandCoins },
-
     { key: "profile", label: "Profil", icon: User },
   ];
-  const items = all.filter((i) => (i.key !== "earn" || earnEnabled) && (i.key !== "bonus" || bonusEnabled));
+  const items = all.filter((i) => i.key !== "bonus" || bonusEnabled);
+
   return (
     <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card border-t border-border pb-safe">
       <div className="grid h-16" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
@@ -371,13 +367,13 @@ function BonusScreen() {
   );
 }
 
-/* ---------- EARN (ads) ---------- */
-function EarnScreen() {
+/* ---------- ADS (reklama ko'rib pul ishlash) ---------- */
+function AdsScreen({ back }: { back: () => void }) {
   const status = useGame((s) => s.adStatus);
   const earnEnabled = useGame((s) => s.earnEnabled);
   const [busy, setBusy] = useState(false);
-  const [tick, setTick] = useState(0);
-  const [tab, setTab] = useState<"ads" | "invest">("ads");
+  const [, setTick] = useState(0);
+
   useEffect(() => { loadAdStatus().catch(() => {}); }, []);
   useEffect(() => {
     const id = setInterval(() => setTick((v) => v + 1), 1000);
@@ -424,7 +420,7 @@ function EarnScreen() {
   if (!earnEnabled) {
     return (
       <>
-        <TopBar title="Pul ishlash" />
+        <TopBar title="Reklama ko'rib pul ishlash" onBack={back} />
         <div className="p-4">
           <div className="card-soft rounded-2xl p-6 text-center text-sm text-muted-foreground">
             Bu bo'lim vaqtincha o'chirilgan.
@@ -438,21 +434,10 @@ function EarnScreen() {
 
   return (
     <>
-      <TopBar title="Pul ishlash" />
+      <TopBar title="Reklama ko'rib pul ishlash" onBack={back} />
       <div className="p-4 space-y-3">
-        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-muted">
-          <button
-            onClick={() => setTab("ads")}
-            className={`h-9 rounded-lg text-xs font-semibold ${tab === "ads" ? "bg-background shadow-sm text-primary" : "text-muted-foreground"}`}
-          >Reklama ko'rish</button>
-          <button
-            onClick={() => setTab("invest")}
-            className={`h-9 rounded-lg text-xs font-semibold ${tab === "invest" ? "bg-background shadow-sm text-primary" : "text-muted-foreground"}`}
-          >Pul ko'paytirish</button>
-        </div>
-
-        {tab === "invest" ? <InvestPanel /> : (
         <>
+
         <div className="jackpot-card rounded-2xl p-5 text-center relative overflow-hidden">
           <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/10" />
           <div className="text-[11px] tracking-widest opacity-90">REKLAMA KO'RISH</div>
@@ -504,7 +489,7 @@ function EarnScreen() {
           • Har biri uchun <b>{formatMoney(reward)} so'm</b> o'yin balansiga tushadi (jami <b>{formatMoney(totalReward)} so'm</b>)<br />
           • Limit oxirgi reklamadan <b>24 soat</b> o'tgach yangilanadi
         </div>
-        </>)}
+        </>
       </div>
     </>
   );
@@ -710,38 +695,17 @@ function BrandHeader({ onDeposit }: { onDeposit: () => void }) {
 }
 
 /* ---------- HOME ---------- */
-function HomeScreen({ go, openJackpot }: { go: (s: Screen) => void; openJackpot: (id: string) => void }) {
-  const jackpots = useGame((s) => s.jackpots);
-  const now = useNow(1000);
-
-  const list = Object.values(jackpots)
-    .filter((j) => j.active && j.loaded)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-
+function HomeScreen({ go }: { go: (s: Screen) => void }) {
   return (
     <>
       <BrandHeader onDeposit={() => go("deposit")} />
 
-      {list.length === 0 && (
-        <div className="mx-4 mt-4 card-soft rounded-2xl p-6 text-center text-sm text-muted-foreground">
-          Hozircha faol jackpotlar yo'q
-        </div>
-      )}
-      {list.map((j, idx) => (
-        <JackpotHomeCard
-          key={j.id}
-          variant={idx === 0 ? "weekly" : "3day"}
-          title={j.title.toUpperCase()}
-          j={j}
-          now={now}
-          onOpen={() => openJackpot(j.id)}
-        />
-      ))}
-      <div className="mx-4 mt-6 flex items-center justify-between">
+      <div className="mx-4 mt-5 flex items-center justify-between">
         <h2 className="text-base font-extrabold">Mashhur o'yinlar</h2>
         <button onClick={() => go("games")} className="text-[11px] font-semibold text-primary">Barchasi ›</button>
       </div>
       <div className="mx-4 mt-2 grid grid-cols-2 gap-3">
+
         {[
           { key: "wheel" as Screen, img: bannerWheel, title: "Omad g'ildiragi", tag: "10–50%" },
           { key: "cards" as Screen, img: bannerCards, title: "Karta ochish", tag: "15–50%" },
@@ -768,14 +732,15 @@ function HomeScreen({ go, openJackpot }: { go: (s: Screen) => void; openJackpot:
       </button>
 
       <button
-        onClick={() => go("earn")}
+        onClick={() => go("ads")}
         className="mx-4 mt-3 w-[calc(100%-2rem)] card-soft rounded-2xl overflow-hidden flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
       >
         <img src={bannerAds} alt="Reklama" loading="lazy" width={1152} height={576} className="w-24 h-20 object-cover" />
         <div className="flex-1 min-w-0 py-2 pr-3">
           <div className="text-sm font-bold">Reklama ko'rib pul ishlash</div>
-          <div className="text-[11px] text-muted-foreground">Har 24 soatda 2 ta reklama · <b className="text-success">250 so'm</b></div>
+          <div className="text-[11px] text-muted-foreground">Har 24 soatda 3 ta reklama · <b className="text-success">750 so'm</b></div>
         </div>
+
       </button>
 
       <div className="h-6" />
