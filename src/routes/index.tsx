@@ -57,8 +57,8 @@ function useNow(ms = 1000) {
 /* ---------- App ---------- */
 function LumoWinApp() {
   const [screen, setScreen] = useState<Screen>("home");
-  const [activeJp, setActiveJp] = useState<string | null>(null);
-  const jackpots = useGame((s) => s.jackpots);
+  const authError = useGame((s) => s.authError);
+
   const authError = useGame((s) => s.authError);
   const ready = useGame((s) => s.ready);
 
