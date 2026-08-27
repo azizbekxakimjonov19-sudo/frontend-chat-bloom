@@ -140,19 +140,17 @@ function TopBar({ title, onBack, right }: { title: string; onBack?: () => void; 
 }
 
 function BottomNav({ current, go }: { current: Screen; go: (s: Screen) => void }) {
-  const earnEnabled = useGame((s) => s.earnEnabled);
   const bonusEnabled = useGame((s) => s.bonusEnabled);
   const all: { key: Screen; label: string; icon: any }[] = [
     { key: "home", label: "Bosh sahifa", icon: Home },
     { key: "games", label: "O'yinlar", icon: Gamepad2 },
     { key: "bonus", label: "Bonus", icon: Sparkles },
-    { key: "earn", label: "Pul ishlash", icon: Gift },
     { key: "payment", label: "To'lov", icon: CreditCard },
     { key: "payouts", label: "To'langan", icon: HandCoins },
-
     { key: "profile", label: "Profil", icon: User },
   ];
-  const items = all.filter((i) => (i.key !== "earn" || earnEnabled) && (i.key !== "bonus" || bonusEnabled));
+  const items = all.filter((i) => i.key !== "bonus" || bonusEnabled);
+
   return (
     <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card border-t border-border pb-safe">
       <div className="grid h-16" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
