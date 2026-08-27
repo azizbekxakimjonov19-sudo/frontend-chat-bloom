@@ -695,38 +695,17 @@ function BrandHeader({ onDeposit }: { onDeposit: () => void }) {
 }
 
 /* ---------- HOME ---------- */
-function HomeScreen({ go, openJackpot }: { go: (s: Screen) => void; openJackpot: (id: string) => void }) {
-  const jackpots = useGame((s) => s.jackpots);
-  const now = useNow(1000);
-
-  const list = Object.values(jackpots)
-    .filter((j) => j.active && j.loaded)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-
+function HomeScreen({ go }: { go: (s: Screen) => void }) {
   return (
     <>
       <BrandHeader onDeposit={() => go("deposit")} />
 
-      {list.length === 0 && (
-        <div className="mx-4 mt-4 card-soft rounded-2xl p-6 text-center text-sm text-muted-foreground">
-          Hozircha faol jackpotlar yo'q
-        </div>
-      )}
-      {list.map((j, idx) => (
-        <JackpotHomeCard
-          key={j.id}
-          variant={idx === 0 ? "weekly" : "3day"}
-          title={j.title.toUpperCase()}
-          j={j}
-          now={now}
-          onOpen={() => openJackpot(j.id)}
-        />
-      ))}
-      <div className="mx-4 mt-6 flex items-center justify-between">
+      <div className="mx-4 mt-5 flex items-center justify-between">
         <h2 className="text-base font-extrabold">Mashhur o'yinlar</h2>
         <button onClick={() => go("games")} className="text-[11px] font-semibold text-primary">Barchasi ›</button>
       </div>
       <div className="mx-4 mt-2 grid grid-cols-2 gap-3">
+
         {[
           { key: "wheel" as Screen, img: bannerWheel, title: "Omad g'ildiragi", tag: "10–50%" },
           { key: "cards" as Screen, img: bannerCards, title: "Karta ochish", tag: "15–50%" },
