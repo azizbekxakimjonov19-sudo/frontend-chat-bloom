@@ -489,7 +489,7 @@ function AdsScreen({ back }: { back: () => void }) {
           • Har biri uchun <b>{formatMoney(reward)} so'm</b> o'yin balansiga tushadi (jami <b>{formatMoney(totalReward)} so'm</b>)<br />
           • Limit oxirgi reklamadan <b>24 soat</b> o'tgach yangilanadi
         </div>
-        </>)}
+        </>
       </div>
     </>
   );
