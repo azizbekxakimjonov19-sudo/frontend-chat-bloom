@@ -367,13 +367,13 @@ function BonusScreen() {
   );
 }
 
-/* ---------- EARN (ads) ---------- */
-function EarnScreen() {
+/* ---------- ADS (reklama ko'rib pul ishlash) ---------- */
+function AdsScreen({ back }: { back: () => void }) {
   const status = useGame((s) => s.adStatus);
   const earnEnabled = useGame((s) => s.earnEnabled);
   const [busy, setBusy] = useState(false);
-  const [tick, setTick] = useState(0);
-  const [tab, setTab] = useState<"ads" | "invest">("ads");
+  const [, setTick] = useState(0);
+
   useEffect(() => { loadAdStatus().catch(() => {}); }, []);
   useEffect(() => {
     const id = setInterval(() => setTick((v) => v + 1), 1000);
