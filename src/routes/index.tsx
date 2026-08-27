@@ -57,7 +57,6 @@ function useNow(ms = 1000) {
 /* ---------- App ---------- */
 function LumoWinApp() {
   const [screen, setScreen] = useState<Screen>("home");
-  const authError = useGame((s) => s.authError);
 
   const authError = useGame((s) => s.authError);
   const ready = useGame((s) => s.ready);
