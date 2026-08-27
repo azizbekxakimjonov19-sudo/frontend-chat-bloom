@@ -86,9 +86,9 @@ function LumoWinApp() {
     return () => { alive = false; clearInterval(id); };
   }, [ready]);
 
-  const isTab = (["home", "games", "bonus", "earn", "payment", "payouts", "profile"] as Screen[]).includes(screen);
+  const isTab = (["home", "games", "bonus", "payment", "payouts", "profile"] as Screen[]).includes(screen);
 
-  const openJackpot = (id: string) => { setActiveJp(id); setScreen("jackpot"); };
+  if (!ready) return <div className="min-h-screen bg-background" />;
 
   return (
     <div className="min-h-screen bg-background flex justify-center">
@@ -98,28 +98,26 @@ function LumoWinApp() {
             Auth: {authError}
           </div>
         )}
-        {screen === "home" && <HomeScreen go={setScreen} openJackpot={openJackpot} />}
+        {screen === "home" && <HomeScreen go={setScreen} />}
         {screen === "games" && <GamesScreen go={setScreen} />}
         {screen === "wheel" && <WheelGameScreen back={() => setScreen("games")} />}
         {screen === "cards" && <CardsGameScreen back={() => setScreen("games")} />}
         {screen === "bonus" && <BonusScreen />}
-        {screen === "earn" && <EarnScreen />}
+        {screen === "ads" && <AdsScreen back={() => setScreen("games")} />}
         {screen === "payment" && <PaymentScreen go={setScreen} />}
         {screen === "payouts" && <PayoutsScreen />}
         {screen === "profile" && <ProfileScreen go={setScreen} />}
         {screen === "deposit" && <DepositScreen back={() => setScreen("payment")} />}
         {screen === "withdraw" && <WithdrawScreen back={() => setScreen("payment")} />}
+        {screen === "convert" && <ConvertScreen back={() => setScreen("payment")} />}
         {screen === "history" && <HistoryScreen back={() => setScreen("profile")} />}
         {screen === "rules" && <RulesScreen back={() => setScreen("profile")} />}
         {screen === "faq" && <FaqScreen back={() => setScreen("profile")} />}
         {screen === "referral" && <ReferralScreen back={() => setScreen("games")} />}
-
-        {screen === "jackpot" && activeJp && jackpots[activeJp] && (
-          <JackpotDetailScreen jackpotId={activeJp} back={() => setScreen("home")} />
-        )}
         {screen === "admin" && <AdminPanel back={() => setScreen("profile")} />}
 
         {isTab && <BottomNav current={screen} go={setScreen} />}
+
       </div>
     </div>
   );
