@@ -1531,16 +1531,10 @@ Iltimos, to'lovni tekshirib tasdiqlang.`;
           <div className="text-[11px] text-muted-foreground">O'yin balansi</div>
           <div className="text-2xl font-bold mt-1">{formatMoney(me.balance)} so'm</div>
         </div>
-        <div className="mt-4 font-semibold">To'lov usuli</div>
-        <div className="grid grid-cols-2 gap-3 mt-2">
-          {methods.map((m) => (
-            <button key={m.key} onClick={() => setMethod(m.key)}
-              className={`card-soft rounded-2xl p-3 h-16 text-left relative ${method === m.key ? "ring-2 ring-primary" : ""}`}>
-              <div className="font-semibold text-sm">{m.label}</div>
-              <div className={`absolute top-3 right-3 w-4 h-4 rounded-full border-2 ${method === m.key ? "border-primary bg-primary" : "border-border"}`} />
-            </button>
-          ))}
+        <div className="mt-4 card-soft rounded-2xl p-3 text-[11px] text-muted-foreground">
+          To'lovlar faqat <b className="text-foreground">Uzcard</b> va <b className="text-foreground">Humo</b> kartalari orqali qabul qilinadi.
         </div>
+
         <div className="mt-4 font-semibold">Miqdor</div>
         <div className="grid grid-cols-4 gap-2 mt-2">
           {["50 000", "100 000", "200 000", "500 000"].map((v) => (
