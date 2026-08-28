@@ -1487,35 +1487,29 @@ function ProfileScreen({ go }: { go: (s: Screen) => void }) {
 
 /* ---------- Deposit / Withdraw ---------- */
 const MIN_AMOUNT = 10000;
-const MIN_WITHDRAW = 20000;
+const MIN_WITHDRAW = 15000;
 const SUPPORT_USERNAME = "LumoWinUz";
 
 function DepositScreen({ back }: { back: () => void }) {
   const [amount, setAmount] = useState("100 000");
-  const [method, setMethod] = useState("humo");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
-  const methods = [
-    { key: "humo", label: "HUMO" }, { key: "uzcard", label: "UZCARD" },
-    { key: "click", label: "Click" }, { key: "payme", label: "Payme" },
-    { key: "visa", label: "VISA/MC" }, { key: "bank", label: "Bank" },
-  ];
   const submit = async () => {
     const n = parseInt(amount.replace(/\D/g, ""), 10);
     if (!n || n < MIN_AMOUNT) {
       setMsg({ ok: false, text: `Minimal to'ldirish: ${formatMoney(MIN_AMOUNT)} so'm` });
       setTimeout(() => setMsg(null), 3000); return;
     }
-    const r = await requestDeposit(n, method);
+    const r = await requestDeposit(n, "card");
     if (!r.ok) { setMsg({ ok: false, text: r.error || "Xatolik" }); setTimeout(() => setMsg(null), 2500); return; }
-    const methodLabel = methods.find((m) => m.key === method)?.label || method;
     const text =
 `LumoWin hisob to'ldirish so'rovi
 Ism: ${me.firstName}${me.username ? " (@" + me.username + ")" : ""}
 Telegram ID: ${me.id}
 Summa: ${formatMoney(n)} so'm
-To'lov tizimi: ${methodLabel}
+Karta: Uzcard / Humo
 Iltimos, to'lovni tekshirib tasdiqlang.`;
+
     try { await navigator.clipboard?.writeText(text); } catch {}
     const url = `https://t.me/${SUPPORT_USERNAME}?text=${encodeURIComponent(text)}`;
     const tg = (window as any)?.Telegram?.WebApp;
