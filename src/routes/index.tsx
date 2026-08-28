@@ -1310,6 +1310,18 @@ function PaymentScreen({ go }: { go: (s: Screen) => void }) {
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </button>
 
+        <button onClick={() => go("convert")} className="w-full card-soft rounded-2xl p-4 flex items-center gap-3 active:scale-[0.99]">
+          <div className="w-12 h-12 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
+            <Sparkles className="w-6 h-6" />
+          </div>
+          <div className="flex-1 text-left">
+            <div className="font-semibold">Konvertatsiya</div>
+            <div className="text-xs text-muted-foreground">Yechish balansini o'yin balansiga o'tkazish (24 soat)</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </button>
+
+
         {/* So'rovlarim */}
         <div className="mt-2">
           <div className="font-semibold text-sm mb-2">So'rovlarim</div>
