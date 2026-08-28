@@ -17,6 +17,7 @@ import {
   claimAdReward, loadAdStatus, playMiniGame,
   createInvestment, claimInvestment, loadInvestments,
   getBonusStatus, spinBonus, claimBonus, type BonusStatus,
+  getConversionStatus, requestConversion, type ConversionStatus,
   type JackpotId,
 } from "@/lib/game-store";
 
@@ -1309,6 +1310,18 @@ function PaymentScreen({ go }: { go: (s: Screen) => void }) {
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </button>
 
+        <button onClick={() => go("convert")} className="w-full card-soft rounded-2xl p-4 flex items-center gap-3 active:scale-[0.99]">
+          <div className="w-12 h-12 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
+            <Sparkles className="w-6 h-6" />
+          </div>
+          <div className="flex-1 text-left">
+            <div className="font-semibold">Konvertatsiya</div>
+            <div className="text-xs text-muted-foreground">Yechish balansini o'yin balansiga o'tkazish (24 soat)</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </button>
+
+
         {/* So'rovlarim */}
         <div className="mt-2">
           <div className="font-semibold text-sm mb-2">So'rovlarim</div>
@@ -1486,35 +1499,29 @@ function ProfileScreen({ go }: { go: (s: Screen) => void }) {
 
 /* ---------- Deposit / Withdraw ---------- */
 const MIN_AMOUNT = 10000;
-const MIN_WITHDRAW = 20000;
+const MIN_WITHDRAW = 15000;
 const SUPPORT_USERNAME = "LumoWinUz";
 
 function DepositScreen({ back }: { back: () => void }) {
   const [amount, setAmount] = useState("100 000");
-  const [method, setMethod] = useState("humo");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
-  const methods = [
-    { key: "humo", label: "HUMO" }, { key: "uzcard", label: "UZCARD" },
-    { key: "click", label: "Click" }, { key: "payme", label: "Payme" },
-    { key: "visa", label: "VISA/MC" }, { key: "bank", label: "Bank" },
-  ];
   const submit = async () => {
     const n = parseInt(amount.replace(/\D/g, ""), 10);
     if (!n || n < MIN_AMOUNT) {
       setMsg({ ok: false, text: `Minimal to'ldirish: ${formatMoney(MIN_AMOUNT)} so'm` });
       setTimeout(() => setMsg(null), 3000); return;
     }
-    const r = await requestDeposit(n, method);
+    const r = await requestDeposit(n, "card");
     if (!r.ok) { setMsg({ ok: false, text: r.error || "Xatolik" }); setTimeout(() => setMsg(null), 2500); return; }
-    const methodLabel = methods.find((m) => m.key === method)?.label || method;
     const text =
 `LumoWin hisob to'ldirish so'rovi
 Ism: ${me.firstName}${me.username ? " (@" + me.username + ")" : ""}
 Telegram ID: ${me.id}
 Summa: ${formatMoney(n)} so'm
-To'lov tizimi: ${methodLabel}
+Karta: Uzcard / Humo
 Iltimos, to'lovni tekshirib tasdiqlang.`;
+
     try { await navigator.clipboard?.writeText(text); } catch {}
     const url = `https://t.me/${SUPPORT_USERNAME}?text=${encodeURIComponent(text)}`;
     const tg = (window as any)?.Telegram?.WebApp;
@@ -1530,16 +1537,10 @@ Iltimos, to'lovni tekshirib tasdiqlang.`;
           <div className="text-[11px] text-muted-foreground">O'yin balansi</div>
           <div className="text-2xl font-bold mt-1">{formatMoney(me.balance)} so'm</div>
         </div>
-        <div className="mt-4 font-semibold">To'lov usuli</div>
-        <div className="grid grid-cols-2 gap-3 mt-2">
-          {methods.map((m) => (
-            <button key={m.key} onClick={() => setMethod(m.key)}
-              className={`card-soft rounded-2xl p-3 h-16 text-left relative ${method === m.key ? "ring-2 ring-primary" : ""}`}>
-              <div className="font-semibold text-sm">{m.label}</div>
-              <div className={`absolute top-3 right-3 w-4 h-4 rounded-full border-2 ${method === m.key ? "border-primary bg-primary" : "border-border"}`} />
-            </button>
-          ))}
+        <div className="mt-4 card-soft rounded-2xl p-3 text-[11px] text-muted-foreground">
+          To'lovlar faqat <b className="text-foreground">Uzcard</b> va <b className="text-foreground">Humo</b> kartalari orqali qabul qilinadi.
         </div>
+
         <div className="mt-4 font-semibold">Miqdor</div>
         <div className="grid grid-cols-4 gap-2 mt-2">
           {["50 000", "100 000", "200 000", "500 000"].map((v) => (
@@ -1561,15 +1562,24 @@ Iltimos, to'lovni tekshirib tasdiqlang.`;
   );
 }
 
+function isWeekendTashkent(now: number) {
+  // UTC+5
+  const d = new Date(now + 5 * 3600000);
+  const day = d.getUTCDay(); // 0 = Sunday, 6 = Saturday
+  return day === 6 || day === 0;
+}
+
 function WithdrawScreen({ back }: { back: () => void }) {
   const [amount, setAmount] = useState("100 000");
-  const [method, setMethod] = useState("humo");
   const [details, setDetails] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
   const [sending, setSending] = useState(false);
+  const now = useNow(30000);
+  const weekend = isWeekendTashkent(now);
   const submit = async () => {
     if (sending) return;
+    if (weekend) { setMsg({ ok: false, text: "Shanba va yakshanba kunlari pul yechish vaqtincha to'xtatilgan" }); setTimeout(() => setMsg(null), 3000); return; }
     const n = parseInt(amount.replace(/\D/g, ""), 10);
     if (!n || n < MIN_WITHDRAW) { setMsg({ ok: false, text: `Minimal yechish: ${formatMoney(MIN_WITHDRAW)} so'm` }); setTimeout(() => setMsg(null), 3000); return; }
     if (n > me.withdrawBalance) { setMsg({ ok: false, text: "Yechish balansi yetarli emas" }); setTimeout(() => setMsg(null), 3000); return; }
@@ -1577,7 +1587,7 @@ function WithdrawScreen({ back }: { back: () => void }) {
     if (cardDigits.length !== 16) { setMsg({ ok: false, text: "Karta raqami 16 xonali bo'lishi kerak" }); setTimeout(() => setMsg(null), 3000); return; }
     setSending(true);
     try {
-      const r = await requestWithdraw(n, method, cardDigits);
+      const r = await requestWithdraw(n, "card", cardDigits);
       setMsg({ ok: r.ok, text: r.ok ? `${formatMoney(n)} so'm so'rovi yuborildi` : (r.error || "Xatolik") });
       setTimeout(() => setMsg(null), 3000);
     } finally {
@@ -1592,16 +1602,12 @@ function WithdrawScreen({ back }: { back: () => void }) {
           <div className="text-[11px] text-muted-foreground">Yechish balansi</div>
           <div className="text-2xl font-bold mt-1 text-success">{formatMoney(me.withdrawBalance)} so'm</div>
         </div>
-        <div className="mt-4 font-semibold">Usul</div>
-        <div className="grid grid-cols-3 gap-2 mt-2">
-          {[{ key: "humo", label: "HUMO" }, { key: "uzcard", label: "UZCARD" }, { key: "payme", label: "Payme" }].map((m) => (
-            <button key={m.key} onClick={() => setMethod(m.key)}
-              className={`card-soft rounded-xl h-14 font-semibold text-sm ${method === m.key ? "ring-2 ring-primary text-primary" : ""}`}>
-              {m.label}
-            </button>
-          ))}
-        </div>
-        <div className="mt-4 font-semibold">Karta / hisob raqami</div>
+        {weekend && (
+          <div className="mt-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive font-medium">
+            Shanba 00:01 dan yakshanba 23:59 gacha (Toshkent vaqti) pul yechish ishlamaydi. Dushanba kuni qayta urinib ko'ring.
+          </div>
+        )}
+        <div className="mt-4 font-semibold">Karta raqami (Uzcard / Humo)</div>
         <input
           value={details}
           onChange={(e) => {
@@ -1614,7 +1620,7 @@ function WithdrawScreen({ back }: { back: () => void }) {
           placeholder="8600 0000 0000 0000"
           className="mt-2 w-full card-soft rounded-xl px-4 h-12 outline-none tracking-widest"
         />
-        <div className="text-[11px] text-muted-foreground mt-1">16 xonali karta raqami</div>
+        <div className="text-[11px] text-muted-foreground mt-1">To'lovlar faqat Uzcard va Humo kartalariga amalga oshiriladi</div>
         <div className="mt-4 font-semibold">Miqdor</div>
         <div className="card-soft rounded-xl mt-2 flex items-center px-4 h-12">
           <input value={amount} onChange={(e) => setAmount(e.target.value)} className="flex-1 bg-transparent outline-none text-base" />
@@ -1622,17 +1628,85 @@ function WithdrawScreen({ back }: { back: () => void }) {
         </div>
         <ul className="mt-3 text-xs text-muted-foreground space-y-1">
           <li>› Minimal yechish: <b>{formatMoney(MIN_WITHDRAW)} so'm</b></li>
-          <li>› 25 soat ichida amalga oshiriladi</li>
+          <li>› 24 soat ichida amalga oshiriladi</li>
+          <li>› Shanba va yakshanba kunlari yechish yopiq</li>
         </ul>
-        <button onClick={submit} disabled={sending}
+        <button onClick={submit} disabled={sending || weekend}
           className="mt-5 w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold shadow-button disabled:opacity-50">
-          {sending ? "Yuborilmoqda..." : "Yechishni so'rash"}
+          {weekend ? "Dam olish kunlari yopiq" : sending ? "Yuborilmoqda..." : "Yechishni so'rash"}
         </button>
         {msg && <div className={`mt-2 text-center text-xs font-medium ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.text}</div>}
       </div>
     </>
   );
 }
+
+/* ---------- Convert ---------- */
+function ConvertScreen({ back }: { back: () => void }) {
+  const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
+  const [status, setStatus] = useState<ConversionStatus>({ pending: false });
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [sending, setSending] = useState(false);
+  const now = useNow(1000);
+
+  useEffect(() => { getConversionStatus().then(setStatus); }, []);
+
+  const submit = async () => {
+    if (sending) return;
+    setSending(true);
+    try {
+      const r = await requestConversion();
+      if (r.ok) {
+        setMsg({ ok: true, text: "Konvertatsiya boshlandi. 24 soatdan so'ng o'yin balansiga tushadi." });
+        setStatus(await getConversionStatus());
+      } else {
+        setMsg({ ok: false, text: r.error || "Xatolik" });
+      }
+      setTimeout(() => setMsg(null), 3500);
+    } finally { setSending(false); }
+  };
+
+  const leftMs = status.executeAt ? Math.max(0, status.executeAt - now) : 0;
+  const h = Math.floor(leftMs / 3600000);
+  const m = Math.floor((leftMs % 3600000) / 60000);
+  const s = Math.floor((leftMs % 60000) / 1000);
+
+  return (
+    <>
+      <TopBar title="Konvertatsiya" onBack={back} />
+      <div className="p-4 space-y-3">
+        <div className="card-soft rounded-2xl p-4 border-2 border-success/25">
+          <div className="text-[11px] text-muted-foreground">Yechish balansi</div>
+          <div className="text-2xl font-bold mt-1 text-success">{formatMoney(me.withdrawBalance)} so'm</div>
+        </div>
+
+        {status.pending ? (
+          <div className="card-soft rounded-2xl p-5 text-center">
+            <div className="text-xs text-muted-foreground">O'tkazilmoqda</div>
+            <div className="text-2xl font-extrabold mt-1">{formatMoney(status.amount || 0)} so'm</div>
+            <div className="mt-3 text-[11px] text-muted-foreground">O'yin balansiga tushishiga qoldi</div>
+            <div className="text-3xl font-extrabold tabular-nums mt-1 text-primary">
+              {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="card-soft rounded-2xl p-3 text-[11px] text-muted-foreground leading-relaxed">
+              Yechish balansidagi butun mablag'ni o'yin balansiga o'tkazishingiz mumkin.
+              Tasdiqlagandan so'ng <b className="text-foreground">24 soat</b> hisoblanadi, vaqt tugagach pul avtomatik o'yin balansiga tushadi.
+            </div>
+            <button onClick={submit} disabled={sending || me.withdrawBalance <= 0}
+              className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold shadow-button disabled:opacity-50">
+              {sending ? "Yuborilmoqda..." : "Tasdiqlab o'tkazish"}
+            </button>
+          </>
+        )}
+        {msg && <div className={`text-center text-xs font-medium ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.text}</div>}
+      </div>
+    </>
+  );
+}
+
 
 /* ---------- History (transactions) ---------- */
 function HistoryScreen({ back }: { back: () => void }) {
