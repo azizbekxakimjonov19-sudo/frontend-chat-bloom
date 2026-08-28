@@ -17,6 +17,7 @@ import {
   claimAdReward, loadAdStatus, playMiniGame,
   createInvestment, claimInvestment, loadInvestments,
   getBonusStatus, spinBonus, claimBonus, type BonusStatus,
+  getConversionStatus, requestConversion, type ConversionStatus,
   type JackpotId,
 } from "@/lib/game-store";
 
