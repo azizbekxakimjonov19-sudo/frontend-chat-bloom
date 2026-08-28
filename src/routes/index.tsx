@@ -964,7 +964,7 @@ function GamesScreen({ go }: { go: (s: Screen) => void }) {
     { key: "wheel" as Screen, img: bannerWheel, title: "Omad g'ildiragi", sub: "10% dan 50% gacha yutuq", price: `${formatMoney(WHEEL_PRICE)} so'm` },
     { key: "cards" as Screen, img: bannerCards, title: "Karta ochish", sub: "9 ta kartadan 1 tasini oching · 15–50%", price: `${formatMoney(CARDS_PRICE)} so'm` },
     { key: "referral" as Screen, img: bannerReferral, title: "Referal orqali ishlash", sub: "Har bir do'st uchun 450 so'm", price: "Bepul" },
-    { key: "earn" as Screen, img: bannerAds, title: "Reklama ko'rib pul ishlash", sub: "Har 24 soatda 2 ta reklama · 250 so'm", price: "Bepul" },
+    { key: "ads" as Screen, img: bannerAds, title: "Reklama ko'rib pul ishlash", sub: "Har 24 soatda 3 ta reklama · 750 so'm", price: "Bepul" },
   ];
   return (
     <>
@@ -1333,8 +1333,8 @@ function PaymentScreen({ go }: { go: (s: Screen) => void }) {
               const isPending = r.status === "pending";
               const isApproved = r.status === "approved" && !r.paidAt;
               const isPaid = r.status === "approved" && !!r.paidAt;
-              // 48h countdown from createdAt
-              const deadline = r.createdAt + 48 * 3600000;
+              // 30h countdown from createdAt
+              const deadline = r.createdAt + 30 * 3600000;
               const leftMs = Math.max(0, deadline - now);
               const h = Math.floor(leftMs / 3600000);
               const m = Math.floor((leftMs % 3600000) / 60000);
@@ -1395,10 +1395,6 @@ function PaymentScreen({ go }: { go: (s: Screen) => void }) {
           </div>
         </div>
 
-        <div className="card-soft rounded-2xl p-3 text-[11px] text-muted-foreground">
-          Chiptalar faqat <b className="text-foreground">O'yin balansi</b> orqali olinadi.
-          Yutuq va qaytarish esa mos ravishda <b className="text-success">Yechish balansi</b> va o'yin balansiga tushadi.
-        </div>
       </div>
     </>
   );
@@ -1515,12 +1511,13 @@ function DepositScreen({ back }: { back: () => void }) {
     const r = await requestDeposit(n, "card");
     if (!r.ok) { setMsg({ ok: false, text: r.error || "Xatolik" }); setTimeout(() => setMsg(null), 2500); return; }
     const text =
-`LumoWin hisob to'ldirish so'rovi
-Ism: ${me.firstName}${me.username ? " (@" + me.username + ")" : ""}
-Telegram ID: ${me.id}
-Summa: ${formatMoney(n)} so'm
-Karta: Uzcard / Humo
-Iltimos, to'lovni tekshirib tasdiqlang.`;
+`🍋 LumoWin | Hisob to'ldirish so'rovi
+
+👤 Ism: ${me.firstName}${me.username ? " (@" + me.username + ")" : ""}
+🆔 Telegram ID: ${me.id}
+💰 Summa: ${formatMoney(n)} so'm
+
+🔎 To'lov qilmoqchiman.`;
 
     try { await navigator.clipboard?.writeText(text); } catch {}
     const url = `https://t.me/${SUPPORT_USERNAME}?text=${encodeURIComponent(text)}`;
@@ -1628,7 +1625,7 @@ function WithdrawScreen({ back }: { back: () => void }) {
         </div>
         <ul className="mt-3 text-xs text-muted-foreground space-y-1">
           <li>› Minimal yechish: <b>{formatMoney(MIN_WITHDRAW)} so'm</b></li>
-          <li>› 24 soat ichida amalga oshiriladi</li>
+          <li>› 30 soat ichida amalga oshiriladi</li>
           <li>› Shanba va yakshanba kunlari yechish yopiq</li>
         </ul>
         <button onClick={submit} disabled={sending || weekend}
@@ -1645,11 +1642,12 @@ function WithdrawScreen({ back }: { back: () => void }) {
 function ConvertScreen({ back }: { back: () => void }) {
   const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
   const [status, setStatus] = useState<ConversionStatus>({ pending: false });
+  const [loaded, setLoaded] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [sending, setSending] = useState(false);
   const now = useNow(1000);
 
-  useEffect(() => { getConversionStatus().then(setStatus); }, []);
+  useEffect(() => { getConversionStatus().then((r) => { setStatus(r); setLoaded(true); }); }, []);
 
   const submit = async () => {
     if (sending) return;
@@ -1680,7 +1678,9 @@ function ConvertScreen({ back }: { back: () => void }) {
           <div className="text-2xl font-bold mt-1 text-success">{formatMoney(me.withdrawBalance)} so'm</div>
         </div>
 
-        {status.pending ? (
+        {!loaded ? (
+          <div className="card-soft rounded-2xl p-5 h-32" />
+        ) : status.pending ? (
           <div className="card-soft rounded-2xl p-5 text-center">
             <div className="text-xs text-muted-foreground">O'tkazilmoqda</div>
             <div className="text-2xl font-extrabold mt-1">{formatMoney(status.amount || 0)} so'm</div>
