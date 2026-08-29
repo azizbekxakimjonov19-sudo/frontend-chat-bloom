@@ -1741,86 +1741,38 @@ function HistoryScreen({ back }: { back: () => void }) {
 
 function RulesScreen({ back }: { back: () => void }) {
   const sections: { title: string; items: string[] }[] = [
-    { title: "🎯 Yo'riqnoma", items: [
-      "O'ynashni boshlash uchun Hisobni to'ldirish bo'limiga kirib, to'lov usuli va summani tanlang (minimal 10 000 so'm).",
-      "«To'lov qilish» tugmasini bosganingizdan so'ng tayyor xabar avtomatik ravishda administratorga yuboriladi. Tasdiqlangach, mablag' O'yin balansiga tushadi.",
-      "So'ng jackpotni tanlab «Chipta sotib olish» tugmasini bosing. Chipta narxi O'yin balansidan yechiladi va siz avtomatik ishtirokchi bo'lasiz.",
-      "Belgilangan vaqt tugagach, tizim avtomatik qura tashlaydi va g'olib(lar)ni aniqlaydi. G'olib bo'lsangiz yutuq summasi Yechish balansiga o'tkaziladi.",
-      "Pul yechish uchun Yechish balansida kamida 10 000 so'm bo'lishi kerak. «Pul yechish» bo'limiga kirib, karta raqamingiz va summani kiriting.",
-      "To'lov holatini ilova orqali Kutilmoqda, To'lanmoqda, To'landi yoki Rad etildi ko'rinishida kuzatishingiz mumkin.",
-    ]},
-    { title: "🏆 Umumiy qoidalar", items: [
-      "LumoWin — Telegram Mini App. Har bir foydalanuvchi Telegram ID orqali avtomatik aniqlanadi.",
-      "Har bir foydalanuvchi uchun alohida hisob, balans va o'yinlar tarixi yuritiladi.",
-      "Platformada Haftalik va Kunlik Jackpot o'yinlari mavjud.",
-      "Har bir jackpot uchun chipta narxi, yutuq jamg'armasi, o'yin muddati va g'oliblar soni administrator tomonidan belgilanadi.",
-      "Administrator zarurat tug'ilganda o'yin parametrlarini oldindan e'lon qilgan holda o'zgartirish huquqiga ega.",
-    ]},
-    { title: "💰 Balans turlari", items: [
-      "🎮 O'yin balansi — Hisobni to'ldirish orqali mablag' shu balansga tushadi. Chiptalar faqat O'yin balansidan xarid qilinadi.",
-      "💳 Yechish balansi — Jackpot yutuqlari va bonuslar faqat ushbu balansga tushadi.",
-      "Pul yechish faqat Yechish balansidan amalga oshiriladi. O'yin balansidagi mablag'ni bevosita yechib olish mumkin emas.",
-    ]},
-    { title: "🎟 Chipta va o'yin tartibi", items: [
-      "Chipta faqat O'yin balansi orqali xarid qilinadi.",
-      "Har bir xarid qilingan chipta noyob tartib raqamiga ega bo'ladi.",
-      "Chipta savdosi administrator belgilagan muddat davomida ochiq bo'ladi. Vaqti tugagach avtomatik yopiladi.",
-      "O'yin yakunlangach tizim avtomatik ravishda tasodifiy qura tashlaydi va g'olib(lar)ni aniqlaydi.",
-      "Taymer server vaqti asosida ishlaydi. Ilovani yopish yoki qayta ochish taymerni o'zgartirmaydi.",
-    ]},
-    { title: "🏅 G'oliblarni aniqlash", items: [
-      "G'oliblar soni administrator tomonidan belgilanadi.",
-      "Har bir g'olib belgilangan to'liq yutuq summasini qo'lga kiritadi.",
-      "Yutuq avtomatik ravishda Yechish balansiga o'tkaziladi.",
-      "G'oliblar tasodifiy algoritm orqali aniqlanadi va barcha ishtirokchilar uchun yutish imkoniyati yaratiladi.",
-    ]},
-    { title: "🔄 Mablag'ni qaytarish", items: [
-      "Yutmagan ishtirokchilarga chipta narxining ma'lum qismi (odatda 110%) Yechish balansiga qaytariladi.",
-      "Qaytariladigan foiz administrator tomonidan oldindan belgilanishi mumkin.",
-      "Siz har qanday holatda g'alaba qozonasiz — kiritgan pulingizga 10% qo'shib beriladi.",
-    ]},
-    { title: "💵 Hisobni to'ldirish va pul yechish", items: [
-      "Minimal hisobni to'ldirish — 10 000 so'm.",
-      "Minimal pul yechish — 10 000 so'm.",
-      "Hisobni to'ldirishda foydalanuvchi to'lov usuli va summani tanlaydi.",
-      "Tayyor so'rov avtomatik ravishda @" + SUPPORT_USERNAME + " administratoriga yuboriladi.",
-      "Pul yechish so'rovlari 25 soat ichida (dam olish kunlarisiz) ko'rib chiqiladi va to'lab berish kafolatlanadi.",
-      "Ayrim hollarda to'lov 25 soatdan ham kechikishi mumkin — bu qoidabuzarlik hisoblanmaydi.",
-      "Platforma daromadi reklama xizmatlaridan tushadi. Reklama to'lovlari kechikkan hollarda foydalanuvchilarga to'lovlar ham keyingi reklama to'lovi kelguncha kechikishi mumkin.",
-      "Kechikish yuz berganda foydalanuvchiga navbat raqami va taxminiy to'lov muddati ko'rsatiladi; to'lov shu muddat ichida navbat bo'yicha amalga oshiriladi.",
-      "Ayrim holatlarda (texnik ishlar, bank yoki to'lov tizimidagi nosozliklar, katta hajmdagi so'rovlar) to'lovlar kechikishi mumkin.",
-      "To'lov holatlari: 🟡 Kutilmoqda · 🔵 To'lanmoqda · 🟢 To'landi · 🔴 Rad etildi (sababi ko'rsatiladi).",
-    ]},
-    { title: "👥 Referal tizimi", items: [
-      "Har bir foydalanuvchi shaxsiy referal havolasiga ega.",
-      "Do'stlaringiz sizning havolangiz orqali ro'yxatdan o'tsa, referal sifatida hisoblanadi.",
-      "Referallar soni ilovaning Referallar bo'limida avtomatik ko'rsatiladi.",
-      "Soxta akkauntlar yoki qoidabuzarlik orqali referal yig'ish aniqlansa, referallar bekor qilinishi mumkin.",
-    ]},
-    { title: "🔒 Xavfsizlik", items: [
-      "Har bir amal serverda saqlanadi (chipta xaridi, to'lov, pul yechish, bonuslar va admin harakatlari).",
-      "Yozuvlar tizimda himoyalangan bo'lib, o'zgartirib yoki o'chirib bo'lmaydi.",
-      "Hisob faqat Telegram ID orqali egasiga tegishli bo'ladi.",
-      "Boshqa shaxslarga akkauntingizdan foydalanishga ruxsat bermang.",
-      "Shubhali faoliyat aniqlansa, administrator hisobni vaqtinchalik tekshiruv uchun cheklashi mumkin.",
+    { title: "📖 Yo'riqnoma", items: [
+      "🍋 LumoWinda bir nechta pul ishlash mumkin bo'lgan bo'limlar mavjud. Bular Omad g'ildiragi, Karta ochish, Do'st taklif qilish va Reklama video ko'rib pul ishlash. Ushbu bo'limlar orqali siz sarmoyasiz va sarmoya kiritib pul ishlasangiz bo'ladi. Hammasi ishonchli va halol.",
+      "Omad g'ildiragi ushbu o'yinda siz 30 000 so'm evaziga barabanni aylantirasiz. Barabanda 10% dan 50% gacha bo'lgan % lar mavjud. Barabanni aylantirish uchun o'yin balansingizda 30 000 so'm bo'lishi shart. Va barabandan tushgan % sizning pulingizga qo'shib beriladi. Misol uchun 30 000 so'mga aylantirdingiz 50% tushti keyin sizga yani 30 000 so'm pulingizga yana 50% qo'shib beriladi va siz 45 000 so'm yutasiz. Tushgan % sizning daromadingiz bo'ladi. Barabanni aylantirish uchun to'lov bo'limidan pul kiritib o'ynashingiz yoki do'stlaringizni chaqirib yoki reklama orqali pul to'plab 30 000 so'm bo'lganda o'ynasangiz bo'ladi.",
+      "Karta ochish ushbu o'yinda siz 20 000 so'm evaziga 9 ta kartalar orasidan 1 tasini tanlaysiz. Kartalar ichida 15% dan 50% gacha bo'lgan % lar mavjud. Kartani ochish uchun o'yin balansingizda 20 000 so'm bo'lishi shart. Va tanlagan kartangizdan tushgan % sizning pulingizga qo'shib beriladi. Misol uchun 20 000 so'mga karta ochdingiz 50% tushti keyin sizga yani 20 000 so'm pulingizga yana 50% qo'shib beriladi va siz 30 000 so'm yutasiz. Tushgan % sizning daromadingiz bo'ladi. Karta ochish uchun to'lov bo'limidan pul kiritib o'ynashingiz yoki do'stlaringizni chaqirib yoki reklama orqali pul to'plab 20 000 so'm bo'lganda o'ynasangiz bo'ladi.",
+      "Do'st chaqirib pul ishlash. Siz sarmoya kiritmasdan botni do'stlaringizni botga taklif qilib pul ishlashingiz mumkin. Har bitta tasdiqlangan do'stingiz uchun 450 so'mdan pul mukofotini olasiz. Tasdiqlangan do'st nima degani? Do'stingiz tasdiqlangan bo'lishi uchun botga oddiy /start tugmasini yuborgan emas. Telefon nomerini tasdiqlagan va LumoWin rasmiy kanaliga obuna bo'lib tasdiqlagandan so'ng do'stingiz tasdiqlangan hisoblanadi va pul to'lab beriladi. Referal orqali yig'ilgan pullar o'yin balansiga tushadi. Yechib olish uchun siz 20 000 yoki 30 000 so'm qilib Omad g'ildiragi yoki Karta ochish o'yinini o'ynashingiz kerak bo'ladi. Shundan so'ng pulingiz yechish balansiga o'tkiziladi va yechib olishingiz mumkin bo'ladi.",
+      "Reklama ko'rib pul ishlash, ushbu bo'limda ham siz sarmoyasiz daromad qilsangiz bo'ladi. Har bir ko'rgan reklamangiz uchun 250 so'mdan beriladi. Har bir foydalanuvchi 24 soatda faqat 3 marta reklama ko'rish imkoniyatiga ega bo'ladi. 3 marta reklama ko'rganingizdan so'ng 24 soat vaqt beriladi. Shundan so'ng yana ko'rishingiz mumkin bo'ladi.",
+      "Konvertatsiya bo'limi ushbu bo'lim to'lov bo'limida mavjud. Siz ushbu tugma orqali yechish balansizdagi pullarni o'yin balansingizga o'tkazishingiz mumkin bo'ladi. Buning uchun kirib tasdiqlash tugmasini bosasiz. Yechish balansini o'yin balansiga qisman o'tkazib bo'lmaydi. To'liq o'tkiziladi va 24 soat vaqt beriladi. Shu vaqt ichida yechish balansizdagi pul o'yin balansizga ko'chiriladi.",
+      "Hisobni to‘ldirish. O‘yinda ishtirok etish uchun O‘yin balansini to‘ldirishingiz mumkin. Buning uchun: To‘lov bo'limiga o'tasiz va Pul kiritish bo‘limini tanlaysiz. Kerakli summani kiritasiz va to'ldirish tugmasini bosasiz. Shundan so'ng sizning ma'lumotlaringizni adminga yuborish chiqadi. Yuborasiz admin karta raqam beradi siz to'lov qilasiz va adminga chek yuborasiz shundan so'ng admin hisobingizni to'ldiradi. (Taxminiy vaqt 1 daqiqadan 1 soatgacha kunduzgi vaqtda.)",
+      "Pul yechish. Yutuq va yechib olish mumkin bo‘lgan mablag‘lar Yechish balansida ko‘rsatiladi. Yechib olish uchun To‘lov bo'limiga o'tib Pul yechish tugmasini bosasiz. Yechmoqchi bo‘lgan summangizni kiritasiz, karta raqamingizni kiritasiz va yechishni so'rash tugmasini bosasiz. To'lovingiz 30 soat ichida amalga oshiriladi. (Shanba va yakshanba kunlari pul yechish imkoni mavjud emas.) Yakshanba to'liq dam olinadi. To'lovlar 30 soat ichida ko'rsatgan hisobingizga kelib tushadi. Noto'g'ri ma'lumot kiritilganda to'liq aybdorlik o'z zimmangizda qoladi. To'lovlar texnik nosozlik, yoki sizda firibgarlik alomati sezilsa qo'shimcha 72 soatgacha cho'zilishi mumkin.",
     ]},
     { title: "🚫 Taqiqlangan holatlar", items: [
-      "Bir foydalanuvchi tomonidan bir nechta akkaunt ochish.",
-      "Tizimdagi xatolardan noqonuniy foydalanishga urinish.",
-      "Soxta to'lov cheklari yuborish.",
-      "Boshqa foydalanuvchilarning hisobiga ruxsatsiz kirishga urinish.",
-      "Platforma faoliyatiga zarar yetkazuvchi harakatlar.",
-      "Administratorga qo'pol muomala qilish, haqorat yoki bosim o'tkazishga urinish — bloklanishga sabab bo'ladi.",
-      "Jackpot o'yinida xatolik yoki qoidabuzarlik aniqlansa, yutuq bekor qilinadi va administrator hech qanday ogohlantirishsiz summani hisobdan ayirishi mumkin.",
-      "Botdan bloklangan taqdirda, kiritgan mablag'ingizni qaytarish uchun 24 soat ichida administratorga yozishingiz shart. Aks holda qoidalarga muvofiq mablag' qaytarilmaydi.",
-      "Bunday holatlarda administrator ogohlantirishsiz hisobni cheklash yoki bloklash huquqiga ega.",
+      "Bir foydalanuvchi tomonidan bir nechta akkaunt ochish taqiqlanadi. Yani 1 telefon orqali 2 ta accountdan foydalanish mumkin emas. Aniqlangan taqdirda barcha accountlari o'chiriladi. Tiklash mumkin emas. Balansizda qancha pul bo'lishidan qat'iy nazar barchasi kuyib ketadi. Javobgarlik o'z zimmangizda qoladi.",
+      "Tizimdagi xatolardan noqonuniy foydalanishga urinish. Botni sun'iy referal ko'paytirishga urunish. Bazi holatlarda xatolik tufayli pul ishlashga urunishlar aniqlansa avtomatik bloklanasiz. Va tiklab bo'lmaydi. Hisobingizda qancha mablag' bo'lishidan qat'iy nazar bloklanadi va javobgarlik o'z zimmangizda qoladi.",
+      "Soxta to'lov cheklari yuborish. Administrator ni aldashga urunish soxta cheklar yuborish aniqlansa barcha accountlariz hisobiz qancha bo'lishidan qat'iy nazar bloklanasiz va qaytib tiklanmidi. Javobgarlik o'z zimmangizda qoladi.",
+      "Platforma faoliyatiga zarar yetkazuvchi harakatlar. Yani ilovani obro'sizlantiruvchi gaplar. Boshqa guruhlarda yoki ilova rasmiy chatida ilova haqida noo'rin gap tarqatayotgan yolg'on ma'lumot yoki obro'sizlantirishga urunishlar aniqlansa balansingizdan qat'iy nazar bloklanasiz va qaytib tiklanmidi. Javobgarlik o'z zimmangizda qoladi.",
+      "Administratorga qo'pol muomala qilish, haqorat yoki bosim o'tkazishga urinish balansingjzdan qat'iy nazar bloklanishga sabab bo'ladi. Javobgarlik o'z bo'yningizda qoladi.",
+      "Soxta akkauntlar yoki qoidabuzarlik orqali referal yig'ish aniqlansa, referallar bekor qilinishi va bloklanishiz mumkin. Balansingizdan qat'iy nazar bloklanasiz va javobgarlik o'z zimmangizda qoladi.",
+    ]},
+    { title: "♻️ Biz haqimizda", items: [
+      "Barcha foydalanuvchilarda savol tug'ilishi tabiiy. Sizlar qayerdan daromad olasizlar? Biz moliyaviy piramida emasmiz va bunga qarshimiz. Internet olamida pul ishlash mumkin bo'lgan yo'llar judayam ko'p topiladi, lekin ishonchlilari kam. Bizning asosiy maqsadimiz albatta foyda ko'rish. Biz reklama kompaniyasi bilan shartnoma asosida ishlaymiz. Ko'rilgan har bir reklamangiz biz uchun foyda olib keladi. Biz reklamaning 80% gacha bo'lgan pulini o'zimizga olamiz qolgan 20% pulni foydalanuvchilar uchun bo'lib ajratib beramiz. Shuning uchun bemalol ishonch hosil qilib Biz bilan ishlashingiz mumkin.",
+      "Barcha ma'lumotlar to'liq qoidalar bo'limida yozilgan. Qoidani buzgan foydalanuvchi kim bo'lishidan qayerga murojat qilishidan qat'iy nazar bloklanadi va balanslari kuyib ketadi. Biz barcha shartlarni oldindan belgilan aytamiz.",
     ]},
   ];
   return (
     <>
       <TopBar title="Qoidalar" onBack={back} />
       <div className="p-4 space-y-4">
-        <div className="w-full flex justify-center"><div className="text-5xl">🏆</div></div>
+        <div className="jackpot-card rounded-2xl p-5 text-center">
+          <div className="text-4xl">🍋</div>
+          <div className="font-bold mt-1">LumoWin Qoidalari</div>
+          <p className="text-xs opacity-90 mt-2 leading-relaxed">Siz ushbu Telegram botdan foydalanar ekansiz, qoidalarga amal qilishga va tanishib chiqishga majbur hisoblanasiz. Har qanday holatda qoidalar birinchi o'rinda hisoblanadi.</p>
+        </div>
         {sections.map((sec, si) => (
           <div key={si} className="card-soft rounded-2xl p-4">
             <div className="font-semibold text-sm text-primary mb-2">{sec.title}</div>
@@ -1828,12 +1780,15 @@ function RulesScreen({ back }: { back: () => void }) {
               {sec.items.map((t, i) => (
                 <li key={i} className="flex gap-2">
                   <span className="text-primary font-semibold">{i + 1}.</span>
-                  <span className="text-foreground">{t}</span>
+                  <span className="text-foreground leading-relaxed">{t}</span>
                 </li>
               ))}
             </ol>
           </div>
         ))}
+        <div className="card-soft rounded-2xl p-4 border border-destructive/25 text-xs text-muted-foreground leading-relaxed">
+          Ushbu qoidalar rasmiy qoidalar hisoblanadi va barcha ogohlantirishlar yozilgan. Ushbu qoidalarga amal qilishingiz shart aks holda bloklanishingiz va tiklanmasligi, balansingiz kuyib ketishi aniq. Bunday xatolarni qilib adminga bosim o'tkizishga urunish har joydan bloklanishizga sabab bo'ladi. Biz qoidalarni barcha uchun bir qilib yaratganmiz. Botdan foydalanishni boshlaganda barcha amal qilishi shart.
+        </div>
       </div>
     </>
   );
