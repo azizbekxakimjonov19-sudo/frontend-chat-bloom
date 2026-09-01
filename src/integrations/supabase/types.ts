@@ -854,6 +854,10 @@ export type Database = {
       }
       is_account_deleted: { Args: { _telegram_id: number }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      last_activity_at: {
+        Args: { _telegram_id: number; _user_id: string }
+        Returns: string
+      }
       play_minigame: { Args: { _game: string }; Returns: Json }
       process_conversions: { Args: never; Returns: number }
       request_conversion: { Args: never; Returns: Json }
