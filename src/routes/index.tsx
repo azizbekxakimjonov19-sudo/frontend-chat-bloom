@@ -1625,7 +1625,7 @@ function WithdrawScreen({ back }: { back: () => void }) {
         </div>
         <ul className="mt-3 text-xs text-muted-foreground space-y-1">
           <li>› Minimal yechish: <b>{formatMoney(MIN_WITHDRAW)} so'm</b></li>
-          <li>› 30 soat ichida amalga oshiriladi</li>
+          <li>› 70 soat ichida amalga oshiriladi</li>
           <li>› Shanba va yakshanba kunlari yechish yopiq</li>
         </ul>
         <button onClick={submit} disabled={sending || weekend}
