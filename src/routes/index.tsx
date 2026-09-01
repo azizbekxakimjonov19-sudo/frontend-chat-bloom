@@ -1333,8 +1333,8 @@ function PaymentScreen({ go }: { go: (s: Screen) => void }) {
               const isPending = r.status === "pending";
               const isApproved = r.status === "approved" && !r.paidAt;
               const isPaid = r.status === "approved" && !!r.paidAt;
-              // 30h countdown from createdAt
-              const deadline = r.createdAt + 30 * 3600000;
+              // 70h countdown from the request creation time
+              const deadline = r.createdAt + 70 * 3600000;
               const leftMs = Math.max(0, deadline - now);
               const h = Math.floor(leftMs / 3600000);
               const m = Math.floor((leftMs % 3600000) / 60000);
