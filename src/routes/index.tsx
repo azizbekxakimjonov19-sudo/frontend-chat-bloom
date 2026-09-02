@@ -58,20 +58,37 @@ function useNow(ms = 1000) {
 /* ---------- App ---------- */
 function LumoWinApp() {
   const [screen, setScreen] = useState<Screen>("home");
+  const [slow, setSlow] = useState(false);
 
   const authError = useGame((s) => s.authError);
   const ready = useGame((s) => s.ready);
 
   useEffect(() => {
-    const tg = (window as any)?.Telegram?.WebApp;
-    if (tg) {
-      tg.ready?.();
-      tg.expand?.();
-      tg.setHeaderColor?.("#ffffff");
-      tg.setBackgroundColor?.("#ffffff");
-    }
-    // Always attempt auth — inside Telegram uses initData, in dev browser uses fallback.
-    initFromTelegram(tg);
+    let cancelled = false;
+    let tries = 0;
+    // Ba'zi Telegram klientlarida (Telegram X, iOS in-app) SDK kechroq yuklanadi —
+    // shuning uchun kutamiz, topilmasa ham initData'ni URL'dan olib davom etamiz.
+    const boot = () => {
+      const tg = (window as any)?.Telegram?.WebApp;
+      if (!tg && tries < 20) {
+        tries += 1;
+        setTimeout(boot, 150);
+        return;
+      }
+      if (cancelled) return;
+      try {
+        tg?.ready?.();
+        tg?.expand?.();
+        tg?.setHeaderColor?.("#ffffff");
+        tg?.setBackgroundColor?.("#ffffff");
+      } catch {
+        /* eski klientlarda ba'zi metodlar yo'q */
+      }
+      initFromTelegram(tg);
+    };
+    boot();
+    const slowTimer = setTimeout(() => { if (!cancelled) setSlow(true); }, 9000);
+    return () => { cancelled = true; clearTimeout(slowTimer); };
   }, []);
 
   useEffect(() => {
@@ -88,7 +105,27 @@ function LumoWinApp() {
 
   const isTab = (["home", "games", "bonus", "payment", "payouts", "profile"] as Screen[]).includes(screen);
 
-  if (!ready) return <div className="min-h-screen bg-background" />;
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        {(authError || slow) && (
+          <>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {authError ?? "Ulanish sekin ketmoqda."} Iltimos, qayta urinib ko'ring.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            >
+              Qayta yuklash
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-background flex justify-center">
