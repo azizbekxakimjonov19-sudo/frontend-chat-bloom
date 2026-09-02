@@ -605,6 +605,32 @@ function setupRealtime() {
   }, 15000);
 }
 
+/** Telegram initData'ni har qanday klientdan olish (SDK bo'lmasa URL hash/query'dan). */
+export function readTelegramInitData(tg?: any): string {
+  const fromSdk: string | undefined = tg?.initData ?? (globalThis as any)?.Telegram?.WebApp?.initData;
+  if (fromSdk && fromSdk.length > 0) return fromSdk;
+  if (typeof window === "undefined") return "";
+  try {
+    const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+    const fromHash = new URLSearchParams(hash).get("tgWebAppData");
+    if (fromHash) return fromHash;
+    const fromQuery = new URLSearchParams(window.location.search).get("tgWebAppData");
+    if (fromQuery) return fromQuery;
+  } catch {
+    /* ignore */
+  }
+  return "";
+}
+
+function safeLocal(key: string, value?: string): string | null {
+  try {
+    if (value !== undefined) { window.localStorage.setItem(key, value); return value; }
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 export async function initFromTelegram(tg: any) {
   try {
     // Public data — safe without auth
@@ -617,7 +643,7 @@ export async function initFromTelegram(tg: any) {
     loadEarnSettings().catch(() => {});
     loadBonusSettings().catch(() => {});
 
-    const initData: string | undefined = tg?.initData;
+    const initData = readTelegramInitData(tg);
     const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
       (typeof window !== "undefined" ? window.location.origin : "");
 
@@ -625,13 +651,14 @@ export async function initFromTelegram(tg: any) {
     if (initData && initData.length > 0) {
       body = { initData };
     } else if (import.meta.env.DEV || (typeof window !== "undefined" && /lovable\.app$/.test(window.location.hostname))) {
-      let devId = Number(localStorage.getItem("dev_tg_id"));
-      if (!devId) { devId = Math.floor(Math.random() * 1_000_000) + 900_000_000; localStorage.setItem("dev_tg_id", String(devId)); }
+      let devId = Number(safeLocal("dev_tg_id"));
+      if (!devId) { devId = Math.floor(Math.random() * 1_000_000) + 900_000_000; safeLocal("dev_tg_id", String(devId)); }
       body = { devTelegramId: devId };
     } else {
       setState((s) => ({ ...s, authError: "Telegram initData yo'q. Botni qayta oching." }));
       return;
     }
+
 
     const res = await fetch(`${apiBase}/api/public/telegram/auth`, {
       method: "POST",
