@@ -77,13 +77,26 @@ export const Route = createFileRoute("/api/public/telegram/auth")({
               user_metadata: { telegram_id: tgUser.id, username: tgUser.username },
             });
             if (createErr || !created?.user) {
-              // Auth user may already exist (e.g. profile was deleted). Look it up.
-              const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-              const found = list?.users?.find((u) => u.email === email);
+              // Auth user already exists (e.g. profile row was removed). Resolve its id
+              // reliably via generateLink, which returns the user for an existing email.
+              const { data: existingLink } = await admin.auth.admin.generateLink({
+                type: "magiclink",
+                email,
+              });
+              let found = existingLink?.user?.id ?? null;
+              if (!found) {
+                // Fallback: paginate through auth users.
+                for (let page = 1; page <= 20 && !found; page += 1) {
+                  const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+                  const match = list?.users?.find((u) => u.email === email);
+                  if (match) found = match.id;
+                  if (!list?.users?.length || list.users.length < 1000) break;
+                }
+              }
               if (!found) {
                 return json({ error: "createUser failed: " + (createErr?.message ?? "") }, { status: 500 });
               }
-              userId = found.id;
+              userId = found;
             } else {
               userId = created.user.id;
             }
