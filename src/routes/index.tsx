@@ -692,7 +692,7 @@ function Avatar({ name, size = 40, photo }: { name: string; size?: number; photo
   );
 }
 
-function BrandHeader({ onDeposit }: { onDeposit: () => void }) {
+function BrandHeader() {
   const me = useGame((s) => s.users[s.currentUserId] ?? s.users[0]);
   return (
     <div className="px-4 pt-3">
@@ -701,12 +701,6 @@ function BrandHeader({ onDeposit }: { onDeposit: () => void }) {
           <img src={logoAsset.url} alt="LumoWin" className="w-10 h-10 rounded-xl object-contain" />
           <span className="font-extrabold tracking-tight text-lg">LumoWin</span>
         </div>
-        <button
-          onClick={onDeposit}
-          className="h-9 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 shadow-button"
-        >
-          <Plus className="w-4 h-4" /> To'ldirish
-        </button>
       </div>
 
       {/* Compact dual balance */}
@@ -717,7 +711,6 @@ function BrandHeader({ onDeposit }: { onDeposit: () => void }) {
             <div className="text-[10px] text-muted-foreground tracking-wider">O'YIN BALANSI</div>
           </div>
           <div className="text-lg font-extrabold mt-0.5 truncate">{formatMoney(me.balance)}</div>
-          <div className="text-[10px] text-muted-foreground">so'm · chipta olish</div>
         </div>
         <div className="card-soft rounded-2xl p-3 border-2 border-success/25">
           <div className="flex items-center gap-1.5">
@@ -725,8 +718,8 @@ function BrandHeader({ onDeposit }: { onDeposit: () => void }) {
             <div className="text-[10px] text-muted-foreground tracking-wider">YECHISH BALANSI</div>
           </div>
           <div className="text-lg font-extrabold mt-0.5 text-success truncate">{formatMoney(me.withdrawBalance)}</div>
-          <div className="text-[10px] text-muted-foreground">so'm · yechib olish</div>
         </div>
+
       </div>
     </div>
   );
