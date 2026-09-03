@@ -6,7 +6,7 @@ import bannerAds from "@/assets/banner-ads.jpg";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Home, Gamepad2, HandCoins, Trophy, User, Plus, ChevronLeft, ChevronRight,
+  Home, Gamepad2, HandCoins, Trophy, User, ChevronLeft, ChevronRight,
   ArrowDownToLine, ArrowUpFromLine, Shield, HelpCircle,
   BadgeCheck, Wallet, ShieldAlert, Crown, Send, CreditCard, Gift, Play, Sparkles,
 } from "lucide-react";
@@ -729,7 +729,7 @@ function BrandHeader() {
 function HomeScreen({ go }: { go: (s: Screen) => void }) {
   return (
     <>
-      <BrandHeader onDeposit={() => go("deposit")} />
+      <BrandHeader />
 
       <div className="mx-4 mt-5 flex items-center justify-between">
         <h2 className="text-base font-extrabold">Mashhur o'yinlar</h2>
