@@ -559,10 +559,7 @@ function InvestPanel() {
   const claim = async (id: string) => {
     setBusy(true);
     // 1 ad view before claim (best-effort)
-    try {
-      const fn = (window as any).show_11642131;
-      if (typeof fn === "function") await fn().catch(() => {});
-    } catch {}
+    try { await showAd("auto"); } catch {}
     const r = await claimInvestment(id);
     setMsg({ ok: !!r.ok, text: r.ok ? `+${formatMoney(r.payout ?? 0)} so'm yechish balansiga qo'shildi` : (r.error || "Xatolik") });
     setBusy(false);
