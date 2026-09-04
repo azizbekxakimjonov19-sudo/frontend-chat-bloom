@@ -422,32 +422,23 @@ function AdsScreen({ back }: { back: () => void }) {
   }, []);
 
   const count = status?.count ?? 0;
-  const limit = status?.limit ?? 2;
+  const limit = status?.limit ?? 4;
   const reward = status?.amount ?? 250;
   const done = count >= limit;
   const msLeft = status?.nextResetAt ? Math.max(0, status.nextResetAt - Date.now()) : 0;
 
-  const waitForSdk = async (timeout = 6000): Promise<((...a: any[]) => Promise<void>) | null> => {
-    const t0 = Date.now();
-    while (Date.now() - t0 < timeout) {
-      const fn = (window as any).show_11642131;
-      if (typeof fn === "function") return fn;
-      await new Promise((r) => setTimeout(r, 250));
-    }
-    return null;
-  };
+  useEffect(() => { initAds().catch(() => {}); }, []);
 
   const watch = async () => {
     if (busy || done) return;
     setBusy(true);
     try {
-      const showFn = await waitForSdk();
-      if (!showFn) {
+      const shown = await showAd("auto");
+      if (!shown) {
         alert("Reklama tarmog'i javob bermayapti. Internetni tekshirib qayta urinib ko'ring.");
         setBusy(false);
         return;
       }
-      await showFn();
       const res = await claimAdReward();
       if (!res?.ok) alert(res?.error || "Xatolik");
     } catch (e: any) {
