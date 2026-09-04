@@ -3,6 +3,7 @@ import bannerWheel from "@/assets/banner-wheel.jpg";
 import bannerCards from "@/assets/banner-cards.jpg";
 import bannerReferral from "@/assets/banner-referral.jpg";
 import bannerAds from "@/assets/banner-ads.jpg";
+import bannerPromo from "@/assets/banner-promo.jpg";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -23,6 +24,7 @@ import {
 
 import { JackpotDetailScreen } from "@/components/JackpotScreens";
 import { AdminPanel } from "@/components/AdminPanel";
+import { showAd, initAds } from "@/lib/ads";
 
 export const Route = createFileRoute("/")({
   component: LumoWinApp,
@@ -31,7 +33,7 @@ export const Route = createFileRoute("/")({
 type Screen =
   | "home" | "games" | "bonus" | "ads" | "payment" | "payouts" | "profile"
   | "deposit" | "withdraw" | "convert" | "history" | "rules" | "faq" | "referral"
-  | "wheel" | "cards"
+  | "wheel" | "cards" | "promo"
   | "admin";
 
 
@@ -141,6 +143,7 @@ function LumoWinApp() {
         {screen === "cards" && <CardsGameScreen back={() => setScreen("games")} />}
         {screen === "bonus" && <BonusScreen />}
         {screen === "ads" && <AdsScreen back={() => setScreen("games")} />}
+        {screen === "promo" && <PromoScreen back={() => setScreen("home")} />}
         {screen === "payment" && <PaymentScreen go={setScreen} />}
         {screen === "payouts" && <PayoutsScreen />}
         {screen === "profile" && <ProfileScreen go={setScreen} />}
@@ -758,7 +761,7 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
         <img src={bannerReferral} alt="Referal" loading="lazy" width={1152} height={576} className="w-24 h-20 object-cover" />
         <div className="flex-1 min-w-0 py-2 pr-3">
           <div className="text-sm font-bold">Do'st taklif qiling</div>
-          <div className="text-[11px] text-muted-foreground">Har bir tasdiqlangan do'st uchun <b className="text-success">+450 so'm</b></div>
+          <div className="text-[11px] text-muted-foreground">Har bir tasdiqlangan do'st uchun <b className="text-success">+555 so'm</b></div>
         </div>
       </button>
 
@@ -769,7 +772,7 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
         <img src={bannerAds} alt="Reklama" loading="lazy" width={1152} height={576} className="w-24 h-20 object-cover" />
         <div className="flex-1 min-w-0 py-2 pr-3">
           <div className="text-sm font-bold">Reklama ko'rib pul ishlash</div>
-          <div className="text-[11px] text-muted-foreground">Har 24 soatda 3 ta reklama · <b className="text-success">750 so'm</b></div>
+          <div className="text-[11px] text-muted-foreground">Har 24 soatda 4 ta reklama · <b className="text-success">1 000 so'm</b></div>
         </div>
 
       </button>
@@ -993,8 +996,8 @@ function GamesScreen({ go }: { go: (s: Screen) => void }) {
   const games = [
     { key: "wheel" as Screen, img: bannerWheel, title: "Omad g'ildiragi", sub: "10% dan 50% gacha yutuq", price: `${formatMoney(WHEEL_PRICE)} so'm` },
     { key: "cards" as Screen, img: bannerCards, title: "Karta ochish", sub: "9 ta kartadan 1 tasini oching · 15–50%", price: `${formatMoney(CARDS_PRICE)} so'm` },
-    { key: "referral" as Screen, img: bannerReferral, title: "Referal orqali ishlash", sub: "Har bir do'st uchun 450 so'm", price: "Bepul" },
-    { key: "ads" as Screen, img: bannerAds, title: "Reklama ko'rib pul ishlash", sub: "Har 24 soatda 3 ta reklama · 750 so'm", price: "Bepul" },
+    { key: "referral" as Screen, img: bannerReferral, title: "Referal orqali ishlash", sub: "Har bir do'st uchun 555 so'm", price: "Bepul" },
+    { key: "ads" as Screen, img: bannerAds, title: "Reklama ko'rib pul ishlash", sub: "Har 24 soatda 4 ta reklama · 1 000 so'm", price: "Bepul" },
   ];
   return (
     <>
@@ -1775,7 +1778,7 @@ function RulesScreen({ back }: { back: () => void }) {
       "🍋 LumoWinda bir nechta pul ishlash mumkin bo'lgan bo'limlar mavjud. Bular Omad g'ildiragi, Karta ochish, Do'st taklif qilish va Reklama video ko'rib pul ishlash. Ushbu bo'limlar orqali siz sarmoyasiz va sarmoya kiritib pul ishlasangiz bo'ladi. Hammasi ishonchli va halol.",
       "Omad g'ildiragi ushbu o'yinda siz 30 000 so'm evaziga barabanni aylantirasiz. Barabanda 10% dan 50% gacha bo'lgan % lar mavjud. Barabanni aylantirish uchun o'yin balansingizda 30 000 so'm bo'lishi shart. Va barabandan tushgan % sizning pulingizga qo'shib beriladi. Misol uchun 30 000 so'mga aylantirdingiz 50% tushti keyin sizga yani 30 000 so'm pulingizga yana 50% qo'shib beriladi va siz 45 000 so'm yutasiz. Tushgan % sizning daromadingiz bo'ladi. Barabanni aylantirish uchun to'lov bo'limidan pul kiritib o'ynashingiz yoki do'stlaringizni chaqirib yoki reklama orqali pul to'plab 30 000 so'm bo'lganda o'ynasangiz bo'ladi.",
       "Karta ochish ushbu o'yinda siz 20 000 so'm evaziga 9 ta kartalar orasidan 1 tasini tanlaysiz. Kartalar ichida 15% dan 50% gacha bo'lgan % lar mavjud. Kartani ochish uchun o'yin balansingizda 20 000 so'm bo'lishi shart. Va tanlagan kartangizdan tushgan % sizning pulingizga qo'shib beriladi. Misol uchun 20 000 so'mga karta ochdingiz 50% tushti keyin sizga yani 20 000 so'm pulingizga yana 50% qo'shib beriladi va siz 30 000 so'm yutasiz. Tushgan % sizning daromadingiz bo'ladi. Karta ochish uchun to'lov bo'limidan pul kiritib o'ynashingiz yoki do'stlaringizni chaqirib yoki reklama orqali pul to'plab 20 000 so'm bo'lganda o'ynasangiz bo'ladi.",
-      "Do'st chaqirib pul ishlash. Siz sarmoya kiritmasdan botni do'stlaringizni botga taklif qilib pul ishlashingiz mumkin. Har bitta tasdiqlangan do'stingiz uchun 450 so'mdan pul mukofotini olasiz. Tasdiqlangan do'st nima degani? Do'stingiz tasdiqlangan bo'lishi uchun botga oddiy /start tugmasini yuborgan emas. Telefon nomerini tasdiqlagan va LumoWin rasmiy kanaliga obuna bo'lib tasdiqlagandan so'ng do'stingiz tasdiqlangan hisoblanadi va pul to'lab beriladi. Referal orqali yig'ilgan pullar o'yin balansiga tushadi. Yechib olish uchun siz 20 000 yoki 30 000 so'm qilib Omad g'ildiragi yoki Karta ochish o'yinini o'ynashingiz kerak bo'ladi. Shundan so'ng pulingiz yechish balansiga o'tkiziladi va yechib olishingiz mumkin bo'ladi.",
+      "Do'st chaqirib pul ishlash. Siz sarmoya kiritmasdan botni do'stlaringizni botga taklif qilib pul ishlashingiz mumkin. Har bitta tasdiqlangan do'stingiz uchun 555 so'mdan pul mukofotini olasiz. Tasdiqlangan do'st nima degani? Do'stingiz tasdiqlangan bo'lishi uchun botga oddiy /start tugmasini yuborgan emas. Telefon nomerini tasdiqlagan va LumoWin rasmiy kanaliga obuna bo'lib tasdiqlagandan so'ng do'stingiz tasdiqlangan hisoblanadi va pul to'lab beriladi. Referal orqali yig'ilgan pullar o'yin balansiga tushadi. Yechib olish uchun siz 20 000 yoki 30 000 so'm qilib Omad g'ildiragi yoki Karta ochish o'yinini o'ynashingiz kerak bo'ladi. Shundan so'ng pulingiz yechish balansiga o'tkiziladi va yechib olishingiz mumkin bo'ladi.",
       "Reklama ko'rib pul ishlash, ushbu bo'limda ham siz sarmoyasiz daromad qilsangiz bo'ladi. Har bir ko'rgan reklamangiz uchun 250 so'mdan beriladi. Har bir foydalanuvchi 24 soatda faqat 3 marta reklama ko'rish imkoniyatiga ega bo'ladi. 3 marta reklama ko'rganingizdan so'ng 24 soat vaqt beriladi. Shundan so'ng yana ko'rishingiz mumkin bo'ladi.",
       "Konvertatsiya bo'limi ushbu bo'lim to'lov bo'limida mavjud. Siz ushbu tugma orqali yechish balansizdagi pullarni o'yin balansingizga o'tkazishingiz mumkin bo'ladi. Buning uchun kirib tasdiqlash tugmasini bosasiz. Yechish balansini o'yin balansiga qisman o'tkazib bo'lmaydi. To'liq o'tkiziladi va 24 soat vaqt beriladi. Shu vaqt ichida yechish balansizdagi pul o'yin balansizga ko'chiriladi.",
       "Hisobni to‘ldirish. O‘yinda ishtirok etish uchun O‘yin balansini to‘ldirishingiz mumkin. Buning uchun: To‘lov bo'limiga o'tasiz va Pul kiritish bo‘limini tanlaysiz. Kerakli summani kiritasiz va to'ldirish tugmasini bosasiz. Shundan so'ng sizning ma'lumotlaringizni adminga yuborish chiqadi. Yuborasiz admin karta raqam beradi siz to'lov qilasiz va adminga chek yuborasiz shundan so'ng admin hisobingizni to'ldiradi. (Taxminiy vaqt 1 daqiqadan 1 soatgacha kunduzgi vaqtda.)",
@@ -1875,7 +1878,7 @@ function ReferralScreen({ back }: { back: () => void }) {
       <div className="p-4 space-y-3">
         <div className="jackpot-card rounded-2xl p-5">
           <div className="text-xs opacity-90 tracking-wider">DO'STLARINGIZNI TAKLIF QILING</div>
-          <div className="text-3xl font-extrabold mt-1">+450 so'm</div>
+          <div className="text-3xl font-extrabold mt-1">+555 so'm</div>
           <div className="text-xs opacity-90 mt-1">har bir kanalga obuna bo'lgan do'st uchun</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -1910,7 +1913,7 @@ function ReferralScreen({ back }: { back: () => void }) {
             <li>Havolangizni do'stlaringizga yuboring.</li>
             <li>Ular botga /start yuboradi va telefon raqamini yuboradi.</li>
             <li>Rasmiy kanalga obuna bo'lib tasdiqlashadi.</li>
-            <li>Faqat shundan keyin sizga <b>+450 so'm</b> qo'shiladi.</li>
+            <li>Faqat shundan keyin sizga <b>+555 so'm</b> qo'shiladi.</li>
           </ol>
         </div>
       </div>
