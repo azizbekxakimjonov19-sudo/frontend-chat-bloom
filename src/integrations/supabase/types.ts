@@ -485,6 +485,71 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          max_uses: number
+          reward: number
+          used_count: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          max_uses?: number
+          reward: number
+          used_count?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          max_uses?: number
+          reward?: number
+          used_count?: number
+        }
+        Relationships: []
+      }
+      promo_redemptions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          promo_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          promo_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          promo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_redemptions_promo_id_fkey"
+            columns: ["promo_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrals: {
         Row: {
           amount: number
@@ -701,7 +766,17 @@ export type Database = {
             }
             Returns: Json
           }
+      admin_create_promo_code: {
+        Args: {
+          _code: string
+          _hours: number
+          _max_uses: number
+          _reward: number
+        }
+        Returns: Json
+      }
       admin_delete_jackpot: { Args: { _id: string }; Returns: Json }
+      admin_delete_promo_code: { Args: { _id: string }; Returns: Json }
       admin_get_user_auth_id: {
         Args: { _telegram_id: number }
         Returns: string
@@ -758,6 +833,10 @@ export type Database = {
       }
       admin_set_bonus_enabled: { Args: { _enabled: boolean }; Returns: Json }
       admin_set_earn_enabled: { Args: { _enabled: boolean }; Returns: Json }
+      admin_set_promo_active: {
+        Args: { _active: boolean; _id: string }
+        Returns: Json
+      }
       admin_toggle_ban: { Args: { _user_id: string }; Returns: Json }
       admin_update_jackpot: {
         Args: {
@@ -860,6 +939,7 @@ export type Database = {
       }
       play_minigame: { Args: { _game: string }; Returns: Json }
       process_conversions: { Args: never; Returns: number }
+      redeem_promo_code: { Args: { _code: string }; Returns: Json }
       request_conversion: { Args: never; Returns: Json }
       request_deposit: {
         Args: { _amount: number; _details: string; _method: string }
