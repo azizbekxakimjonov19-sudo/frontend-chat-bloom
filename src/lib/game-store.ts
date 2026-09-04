@@ -496,6 +496,60 @@ export async function adminSetEarnEnabled(enabled: boolean) {
   return data as any;
 }
 
+/* ---------- Promokod ---------- */
+export type PromoCode = {
+  id: string;
+  code: string;
+  reward: number;
+  maxUses: number;
+  usedCount: number;
+  expiresAt: number | null;
+  active: boolean;
+  createdAt: number;
+};
+
+export async function redeemPromoCode(code: string): Promise<{ ok: boolean; error?: string; amount?: number }> {
+  const { data, error } = await (supabase as any).rpc("redeem_promo_code", { _code: code });
+  if (error) return { ok: false, error: error.message };
+  if (data?.ok) await loadMyDetails();
+  return data as any;
+}
+
+export async function adminListPromoCodes(): Promise<PromoCode[]> {
+  const { data } = await (supabase as any)
+    .from("promo_codes").select("*").order("created_at", { ascending: false }).limit(200);
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    code: r.code,
+    reward: Number(r.reward),
+    maxUses: Number(r.max_uses),
+    usedCount: Number(r.used_count),
+    expiresAt: r.expires_at ? new Date(r.expires_at).getTime() : null,
+    active: !!r.active,
+    createdAt: new Date(r.created_at).getTime(),
+  }));
+}
+
+export async function adminCreatePromoCode(code: string, reward: number, maxUses: number, hours: number) {
+  const { data, error } = await (supabase as any).rpc("admin_create_promo_code", {
+    _code: code, _reward: reward, _max_uses: maxUses, _hours: hours,
+  });
+  if (error) return { ok: false, error: error.message };
+  return data as any;
+}
+
+export async function adminSetPromoActive(id: string, active: boolean) {
+  const { data, error } = await (supabase as any).rpc("admin_set_promo_active", { _id: id, _active: active });
+  if (error) return { ok: false, error: error.message };
+  return data as any;
+}
+
+export async function adminDeletePromoCode(id: string) {
+  const { data, error } = await (supabase as any).rpc("admin_delete_promo_code", { _id: id });
+  if (error) return { ok: false, error: error.message };
+  return data as any;
+}
+
 /* ---------- Bonus ---------- */
 export async function loadBonusSettings() {
   const { data } = await (supabase as any).from("app_settings").select("key, value").eq("key", "bonus_enabled").maybeSingle();

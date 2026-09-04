@@ -109,6 +109,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <script src="https://telegram.org/js/telegram-web-app.js" />
         <script src="//libtl.com/sdk.js" data-zone="11642131" data-sdk="show_11642131" async />
+        <script src="https://js.onclckvd.com/in-stream-ad-admanager/tma.js" async />
         <HeadContent />
       </head>
       <body>
