@@ -19,6 +19,7 @@ import {
   createInvestment, claimInvestment, loadInvestments,
   getBonusStatus, spinBonus, claimBonus, type BonusStatus,
   getConversionStatus, requestConversion, type ConversionStatus,
+  redeemPromoCode,
   type JackpotId,
 } from "@/lib/game-store";
 
@@ -765,8 +766,93 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
 
       </button>
 
+      <button
+        onClick={() => go("promo")}
+        className="mx-4 mt-3 w-[calc(100%-2rem)] card-soft rounded-2xl overflow-hidden flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+      >
+        <img src={bannerPromo} alt="Promokod" loading="lazy" width={1152} height={576} className="w-24 h-20 object-cover" />
+        <div className="flex-1 min-w-0 py-2 pr-3">
+          <div className="text-sm font-bold">Promokod kiritib pul ishlang</div>
+          <div className="text-[11px] text-muted-foreground">Promokodlarni <b className="text-success">@LumoWin</b> kanalidan oling</div>
+        </div>
+      </button>
+
       <div className="h-6" />
 
+    </>
+  );
+}
+
+function PromoScreen({ back }: { back: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => { initAds().catch(() => {}); }, []);
+
+  const submit = async () => {
+    const c = code.trim().toUpperCase();
+    if (busy || c.length < 3) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const shown = await showAd("onclicka");
+      if (!shown) {
+        setMsg({ ok: false, text: "Reklama ko'rsatilmadi. Qayta urinib ko'ring." });
+        setBusy(false);
+        return;
+      }
+      const res = await redeemPromoCode(c);
+      if (res?.ok) {
+        setMsg({ ok: true, text: `Tabriklaymiz! +${formatMoney(res.amount ?? 0)} so'm hisobingizga qo'shildi.` });
+        setCode("");
+      } else {
+        setMsg({ ok: false, text: res?.error || "Promokod noto'g'ri yoki muddati tugagan." });
+      }
+    } catch {
+      setMsg({ ok: false, text: "Xatolik yuz berdi. Qayta urinib ko'ring." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <TopBar title="Promokod" onBack={back} />
+      <div className="p-4 space-y-3">
+        <div className="card-soft rounded-2xl overflow-hidden">
+          <img src={bannerPromo} alt="Promokod" width={1152} height={576} className="w-full h-36 object-cover" />
+        </div>
+
+        <div className="card-soft rounded-2xl p-4 space-y-3">
+          <div className="text-sm font-bold">Promokodni kiriting</div>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="MASALAN: LUMO2026"
+            maxLength={32}
+            autoCapitalize="characters"
+            className="w-full h-12 rounded-xl bg-muted px-4 text-center text-base font-bold tracking-widest outline-none"
+          />
+          <button
+            onClick={submit}
+            disabled={busy || code.trim().length < 3}
+            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold disabled:opacity-50"
+          >
+            {busy ? "Tekshirilmoqda..." : "Tasdiqlash"}
+          </button>
+          {msg && (
+            <div className={`rounded-xl px-3 py-2 text-xs ${msg.ok ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+              {msg.text}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+          Promokodlarni <b className="text-foreground">@LumoWin</b> rasmiy kanalimizdan olishingiz mumkin. Har bir promokoddan
+          bitta foydalanuvchi faqat bir marta foydalana oladi. Tasdiqlashdan oldin 1 ta reklama ko'rsatiladi.
+        </div>
+      </div>
     </>
   );
 }
