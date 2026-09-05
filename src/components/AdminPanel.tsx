@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft, Search, ShieldOff, ShieldCheck, Plus, Minus, User as UserIcon,
   Ticket, Trophy, Wallet, Activity, ArrowDownToLine, ArrowUpFromLine,
-  Users, TrendingUp, AlertTriangle, ChevronRight, Ban, Settings, Copy, Check, X,
+  Users, TrendingUp, AlertTriangle, ChevronRight, Ban, Settings, Copy, Check, X, Gift, Trash2,
 } from "lucide-react";
 import {
   useGame, adminSetBalance, adminSetWithdrawBalance, adminToggleBan, drawWinner, adminUpdateJackpot,
@@ -10,12 +10,13 @@ import {
   adminCreateJackpot, adminRenameJackpot, adminDeleteJackpot,
   adminSetEarnEnabled, loadEarnSettings,
   adminSetBonusEnabled, loadBonusSettings,
+  adminListPromoCodes, adminCreatePromoCode, adminSetPromoActive, adminDeletePromoCode, type PromoCode,
   formatMoney, type UserRecord, type JackpotId,
 } from "@/lib/game-store";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type AdminView = "home" | "users" | "user" | "jackpots" | "transactions" | "stats" | "settings" | "withdrawals" | "deposits";
+type AdminView = "home" | "users" | "user" | "jackpots" | "transactions" | "stats" | "settings" | "withdrawals" | "deposits" | "promos";
 
 export function AdminPanel({ back }: { back: () => void }) {
   const [view, setView] = useState<AdminView>("home");
@@ -42,6 +43,7 @@ export function AdminPanel({ back }: { back: () => void }) {
           {view === "settings" && "Sozlamalar"}
           {view === "withdrawals" && "Pul yechish so'rovlari"}
           {view === "deposits" && "Pul kiritish so'rovlari"}
+          {view === "promos" && "Promokodlar"}
         </h1>
       </div>
 
@@ -54,6 +56,7 @@ export function AdminPanel({ back }: { back: () => void }) {
       {view === "settings" && <SettingsAdmin />}
       {view === "withdrawals" && <WithdrawalsAdmin />}
       {view === "deposits" && <DepositsAdmin />}
+      {view === "promos" && <PromosAdmin />}
     </>
   );
 }
@@ -73,6 +76,7 @@ function AdminHome({ go }: { go: (v: AdminView) => void }) {
     { key: "withdrawals", label: "Pul yechish so'rovlari", icon: ArrowUpFromLine },
     { key: "deposits", label: "Pul kiritish so'rovlari", icon: ArrowDownToLine },
     { key: "jackpots", label: "Jackpotlar", icon: Trophy, badge: `${totalTickets} chipta` },
+    { key: "promos", label: "Promokodlar", icon: Gift },
     { key: "transactions", label: "Tranzaksiyalar", icon: Wallet, badge: `${txs.length}` },
     { key: "stats", label: "Statistika", icon: TrendingUp },
     { key: "settings", label: "Sozlamalar", icon: Settings },
@@ -1112,6 +1116,115 @@ function DepositsAdmin() {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- PROMO CODES ---------- */
+function PromosAdmin() {
+  const [rows, setRows] = useState<PromoCode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [code, setCode] = useState("");
+  const [reward, setReward] = useState("1000");
+  const [maxUses, setMaxUses] = useState("100");
+  const [hours, setHours] = useState("72");
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    setRows(await adminListPromoCodes());
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const create = async () => {
+    const c = code.trim().toUpperCase();
+    if (!c || busy) return;
+    setBusy(true);
+    const res = await adminCreatePromoCode(c, Number(reward) || 0, Number(maxUses) || 1, Number(hours) || 0);
+    setBusy(false);
+    if (res?.ok) {
+      toast.success("Promokod yaratildi");
+      setCode("");
+      load();
+    } else {
+      toast.error(res?.error || "Xatolik");
+    }
+  };
+
+  const genRandom = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let out = "LUMO";
+    for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    setCode(out);
+  };
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="card-soft rounded-2xl p-4 space-y-3">
+        <div className="text-sm font-semibold">Yangi promokod</div>
+        <div className="flex gap-2">
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="KOD"
+            className="flex-1 h-11 rounded-xl bg-muted px-3 text-sm font-bold tracking-wider outline-none"
+          />
+          <button onClick={genRandom} className="h-11 px-3 rounded-xl bg-muted text-xs font-semibold">Random</button>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <LabeledInput label="Mukofot" value={reward} onChange={setReward} />
+          <LabeledInput label="Limit" value={maxUses} onChange={setMaxUses} />
+          <LabeledInput label="Soat (0=cheksiz)" value={hours} onChange={setHours} />
+        </div>
+        <button
+          onClick={create}
+          disabled={busy || !code.trim()}
+          className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+        >
+          Yaratish
+        </button>
+      </div>
+
+      {loading && <div className="text-center text-xs text-muted-foreground py-6">Yuklanmoqda...</div>}
+      {!loading && rows.length === 0 && (
+        <div className="text-center text-xs text-muted-foreground py-6">Promokodlar yo'q</div>
+      )}
+
+      <div className="space-y-2">
+        {rows.map((r) => {
+          const expired = r.expiresAt != null && r.expiresAt < Date.now();
+          return (
+            <div key={r.id} className="card-soft rounded-2xl p-3">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-sm tracking-wider">{r.code}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">
+                    {formatMoney(r.reward)} so'm · {r.usedCount}/{r.maxUses} ishlatilgan
+                    {r.expiresAt != null && ` · ${expired ? "muddati tugagan" : new Date(r.expiresAt).toLocaleString("uz-UZ")}`}
+                  </div>
+                </div>
+                <button
+                  onClick={async () => { await adminSetPromoActive(r.id, !r.active); load(); }}
+                  className={`h-9 px-3 rounded-xl text-xs font-semibold ${r.active && !expired ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}
+                >
+                  {r.active ? "Faol" : "O'chiq"}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm(`${r.code} o'chirilsinmi?`)) return;
+                    await adminDeletePromoCode(r.id);
+                    load();
+                  }}
+                  className="w-9 h-9 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
