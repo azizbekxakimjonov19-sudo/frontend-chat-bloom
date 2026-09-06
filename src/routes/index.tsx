@@ -20,7 +20,7 @@ import {
   createInvestment, claimInvestment, loadInvestments,
   getBonusStatus, spinBonus, claimBonus, type BonusStatus,
   getConversionStatus, requestConversion, type ConversionStatus,
-  redeemPromoCode,
+  redeemPromoCode, getX2Promo,
   type JackpotId,
 } from "@/lib/game-store";
 
@@ -779,11 +779,107 @@ function HomeScreen({ go }: { go: (s: Screen) => void }) {
         </div>
       </button>
 
+      <X2Banner go={go} />
+
       <div className="h-6" />
 
     </>
   );
 }
+
+/* ---------- 2x bonus aksiyasi ---------- */
+function useX2() {
+  const [promo, setPromo] = useState<{ enabled: boolean; endsAt: number } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () => getX2Promo().then((p) => { if (alive) setPromo(p); }).catch(() => {});
+    load();
+    const id = setInterval(load, 60000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+  return promo;
+}
+
+function x2Left(endsAt: number) {
+  const ms = Math.max(0, endsAt - Date.now());
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function X2Banner({ go }: { go: (s: Screen) => void }) {
+  const promo = useX2();
+  const now = useNow(1000);
+  if (!promo?.enabled || promo.endsAt <= now) return null;
+  return (
+    <button
+      onClick={() => go("x2")}
+      className="mx-4 mt-3 w-[calc(100%-2rem)] card-soft rounded-2xl overflow-hidden flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
+    >
+      <img src={bannerX2} alt="2x bonus" loading="lazy" width={1152} height={576} className="w-24 h-20 object-cover" />
+      <div className="flex-1 min-w-0 py-2 pr-3">
+        <div className="text-sm font-bold">2x bonus — 100% sovg'a</div>
+        <div className="text-[11px] text-muted-foreground">
+          Hisobni to'ldiring · <b className="text-success">{x2Left(promo.endsAt)}</b> qoldi
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function X2Screen({ back, go }: { back: () => void; go: (s: Screen) => void }) {
+  const promo = useX2();
+  const now = useNow(1000);
+  const active = !!promo?.enabled && (promo?.endsAt ?? 0) > now;
+
+  return (
+    <>
+      <TopBar title="2x bonus" onBack={back} />
+      <div className="p-4 space-y-3">
+        <div className="card-soft rounded-2xl overflow-hidden">
+          <img src={bannerX2} alt="2x bonus" width={1152} height={576} className="w-full h-40 object-cover" />
+        </div>
+
+        {!promo ? (
+          <div className="card-soft rounded-2xl p-6 text-center text-sm text-muted-foreground">Yuklanmoqda…</div>
+        ) : active ? (
+          <>
+            <div className="rounded-2xl bg-primary/10 border border-primary/30 p-4 text-center">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Aksiya tugashiga</div>
+              <div className="text-3xl font-extrabold tabular-nums text-primary mt-1">{x2Left(promo.endsAt)}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">soat : daqiqa : soniya</div>
+            </div>
+
+            <div className="card-soft rounded-2xl p-4 space-y-2 text-[13px]">
+              <div className="text-sm font-bold">Hisobingizni to'ldiring va 100% bonus oling</div>
+              <p className="text-muted-foreground">
+                Ushbu sahifa yoniq payti hisobingizni to'ldirsangiz, summangiz <b className="text-success">2 barobar</b> bo'ladi.
+              </p>
+              <ul className="text-muted-foreground space-y-1">
+                <li>• Aksiya faqat bugun — <b className="text-foreground">24 soat</b> amal qiladi</li>
+                <li>• Bonus to'lov tasdiqlangandan so'ng qo'shiladi</li>
+                <li>• Vaqt tugagach aksiya avtomatik yakunlanadi</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => go("deposit")}
+              className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold active:scale-[0.99] transition-transform"
+            >
+              To'ldirish
+            </button>
+          </>
+        ) : (
+          <div className="card-soft rounded-2xl p-6 text-center text-sm text-muted-foreground">
+            Aksiya hozircha faol emas. Yangiliklar uchun <b className="text-foreground">@LumoWin</b> kanalini kuzatib boring.
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 
 function PromoScreen({ back }: { back: () => void }) {
   const [code, setCode] = useState("");
