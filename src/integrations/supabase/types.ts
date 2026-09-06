@@ -837,6 +837,7 @@ export type Database = {
         Args: { _active: boolean; _id: string }
         Returns: Json
       }
+      admin_set_x2_promo: { Args: { _enabled: boolean }; Returns: Json }
       admin_toggle_ban: { Args: { _user_id: string }; Returns: Json }
       admin_update_jackpot: {
         Args: {
