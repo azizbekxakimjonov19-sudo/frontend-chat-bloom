@@ -4,6 +4,7 @@ import bannerCards from "@/assets/banner-cards.jpg";
 import bannerReferral from "@/assets/banner-referral.jpg";
 import bannerAds from "@/assets/banner-ads.jpg";
 import bannerPromo from "@/assets/banner-promo.jpg";
+import bannerX2 from "@/assets/banner-x2.jpg";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -34,7 +35,7 @@ export const Route = createFileRoute("/")({
 type Screen =
   | "home" | "games" | "bonus" | "ads" | "payment" | "payouts" | "profile"
   | "deposit" | "withdraw" | "convert" | "history" | "rules" | "faq" | "referral"
-  | "wheel" | "cards" | "promo"
+  | "wheel" | "cards" | "promo" | "x2"
   | "admin";
 
 
@@ -145,6 +146,7 @@ function LumoWinApp() {
         {screen === "bonus" && <BonusScreen />}
         {screen === "ads" && <AdsScreen back={() => setScreen("games")} />}
         {screen === "promo" && <PromoScreen back={() => setScreen("home")} />}
+        {screen === "x2" && <X2Screen back={() => setScreen("home")} go={setScreen} />}
         {screen === "payment" && <PaymentScreen go={setScreen} />}
         {screen === "payouts" && <PayoutsScreen />}
         {screen === "profile" && <ProfileScreen go={setScreen} />}
