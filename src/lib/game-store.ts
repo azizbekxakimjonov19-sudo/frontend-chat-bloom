@@ -496,6 +496,27 @@ export async function adminSetEarnEnabled(enabled: boolean) {
   return data as any;
 }
 
+/* ---------- 2x bonus aksiyasi ---------- */
+export type X2Promo = { enabled: boolean; endsAt: number };
+export async function getX2Promo(): Promise<X2Promo> {
+  try {
+    const { data } = await (supabase as any)
+      .from("app_settings").select("value").eq("key", "x2_promo").maybeSingle();
+    const v = (data?.value ?? {}) as any;
+    const endsAt = v?.ends_at ? new Date(v.ends_at).getTime() : 0;
+    return { enabled: !!v?.enabled && endsAt > Date.now(), endsAt };
+  } catch {
+    return { enabled: false, endsAt: 0 };
+  }
+}
+export async function adminSetX2Promo(enabled: boolean) {
+  const { data, error } = await (supabase as any).rpc("admin_set_x2_promo", { _enabled: enabled });
+  if (error) return { ok: false, error: error.message };
+  return data as any;
+}
+
+
+
 /* ---------- Promokod ---------- */
 export type PromoCode = {
   id: string;
