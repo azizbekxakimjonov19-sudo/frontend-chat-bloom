@@ -100,13 +100,17 @@ async function runOnclicka(timeout: number): Promise<boolean> {
  * @returns reklama muvaffaqiyatli ko'rsatildimi
  */
 export async function showAd(prefer: "auto" | "onclicka" | "monetag" = "auto"): Promise<boolean> {
+  if (typeof window !== "undefined") ensureSdks();
   const first: "onclicka" | "monetag" =
     prefer === "auto" ? (turn++ % 2 === 0 ? "monetag" : "onclicka") : prefer;
 
   const primary = first === "monetag" ? runMonetag : runOnclicka;
   const secondary = first === "monetag" ? runOnclicka : runMonetag;
 
-  if (await primary(6000)) return true;
+  if (await primary(8000)) return true;
   // Birinchisi chiqmasa — ikkinchisi o'rnini to'ldiradi
-  return secondary(6000);
+  if (await secondary(8000)) return true;
+  // Sekin internetda oxirgi urinish
+  return primary(5000);
 }
+
