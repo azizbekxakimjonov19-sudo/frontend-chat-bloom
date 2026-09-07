@@ -11,6 +11,7 @@ import {
   adminSetEarnEnabled, loadEarnSettings,
   adminSetBonusEnabled, loadBonusSettings,
   adminListPromoCodes, adminCreatePromoCode, adminSetPromoActive, adminDeletePromoCode, type PromoCode,
+  getX2Promo, adminSetX2Promo,
   formatMoney, type UserRecord, type JackpotId,
 } from "@/lib/game-store";
 import { supabase } from "@/integrations/supabase/client";
