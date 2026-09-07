@@ -895,7 +895,59 @@ function SettingsAdmin() {
           Holat: <b className={bonusEnabled ? "text-success" : "text-primary"}>{bonusEnabled ? "Yoqilgan" : "O'chirilgan"}</b>
         </div>
       </div>
+
+      <X2Setting />
     </div>
+  );
+}
+
+function X2Setting() {
+  const [promo, setPromo] = useState<{ enabled: boolean; endsAt: number } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [, tick] = useState(0);
+  useEffect(() => {
+    getX2Promo().then(setPromo).catch(() => setPromo({ enabled: false, endsAt: 0 }));
+    const t = setInterval(() => tick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const enabled = !!promo?.enabled && (promo?.endsAt ?? 0) > Date.now();
+  const left = () => {
+    const ms = Math.max(0, (promo?.endsAt ?? 0) - Date.now());
+    const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000), s = Math.floor((ms % 60000) / 1000);
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  };
+  const toggle = async () => {
+    setBusy(true);
+    const res = await adminSetX2Promo(!enabled);
+    setBusy(false);
+    if (!res?.ok) { toast.error(res?.error || "Xatolik"); return; }
+    const p = await getX2Promo().catch(() => null);
+    if (p) setPromo(p);
+    toast.success(!enabled ? "2x bonus banneri yoqildi (24 soat)" : "2x bonus banneri o'chirildi");
+  };
+  return (
+    <div className="card-soft rounded-2xl p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-sm">2x bonus banneri</div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            Har yoqilganda aksiya muddati 24 soatdan qayta boshlanadi. Bonusni qo'lda qo'shasiz.
+          </div>
+        </div>
+        <button
+          onClick={toggle}
+          disabled={busy}
+          className={`w-12 h-7 rounded-full relative transition-colors ${enabled ? "bg-primary" : "bg-muted"}`}
+        >
+          <span className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${enabled ? "left-[22px]" : "left-0.5"}`} />
+        </button>
+      </div>
+      <div className="mt-3 text-[11px] text-muted-foreground">
+        Holat: <b className={enabled ? "text-success" : "text-primary"}>{enabled ? "Yoqilgan" : "O'chirilgan"}</b>
+        {enabled && <> · Aksiya muddati: <b className="text-success tabular-nums">{left()}</b></>}
+      </div>
+    </div>
+
   );
 }
 
