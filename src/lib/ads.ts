@@ -25,11 +25,27 @@ async function waitFor<T>(get: () => T | null, timeout: number): Promise<T | nul
   }
 }
 
+function ensureScript(src: string, attrs?: Record<string, string>) {
+  if (typeof document === "undefined") return;
+  if (document.querySelector(`script[src="${src}"]`)) return;
+  const s = document.createElement("script");
+  s.src = src;
+  s.async = true;
+  if (attrs) for (const [k, v] of Object.entries(attrs)) s.setAttribute(k, v);
+  document.head.appendChild(s);
+}
+
+function ensureSdks() {
+  ensureScript("https://libtl.com/sdk.js", { "data-zone": "11642131", "data-sdk": MONETAG_FN });
+  ensureScript("https://js.onclckvd.com/in-stream-ad-admanager/tma.js");
+}
+
 export async function initAds(): Promise<void> {
   if (typeof window === "undefined") return;
+  ensureSdks();
   if (!onclickaInit) {
     onclickaInit = (async () => {
-      const init = await waitFor(() => (window as any)?.initCdTma ?? null, 8000);
+      const init = await waitFor(() => (window as any)?.initCdTma ?? null, 10000);
       if (typeof init !== "function") return null;
       try {
         const show = await init({ id: ONCLICKA_SPOT });
@@ -48,8 +64,11 @@ async function getOnclicka(timeout = 8000): Promise<ShowFn | null> {
   if (onclickaShow) return onclickaShow;
   await initAds();
   if (onclickaShow) return onclickaShow;
-  return waitFor(() => onclickaShow, timeout);
+  const v = await waitFor(() => onclickaShow, timeout);
+  if (!v) onclickaInit = null; // keyingi urinishda qayta init qilinsin
+  return v;
 }
+
 
 async function runMonetag(timeout: number): Promise<boolean> {
   const fn = getMonetag() ?? (await waitFor(getMonetag, timeout));
