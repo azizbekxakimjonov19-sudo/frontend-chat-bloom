@@ -400,7 +400,13 @@ async function loadUsers() {
     const me = s.users[s.currentUserId];
     if (me) {
       if (users[me.id]) {
-        users[me.id] = { ...users[me.id], tickets: me.tickets, audit: me.audit };
+        users[me.id] = {
+          ...users[me.id],
+          tickets: me.tickets,
+          audit: me.audit,
+          // never downgrade a confirmed admin (profile may fall outside top-200)
+          isAdmin: users[me.id].isAdmin || me.isAdmin,
+        };
       } else {
         users[me.id] = me;
       }
